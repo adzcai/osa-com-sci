@@ -3,7 +3,7 @@ class PianoKey {
   
   // Store information about the sound
   SinOsc so;
-  String ansi;
+  String noteName;
   float freq;
   
   boolean inChord = false;
@@ -14,16 +14,18 @@ class PianoKey {
   boolean playing = false;
   boolean pressed = false;
   
-  PianoKey(String ansi_, SinOsc so_, int hue_) {
-    ansi = ansi_;
-    white = ansi.length() == 2;
+  PianoKey(String noteName_, SinOsc so_, int hue_) {
+    noteName = noteName_;
+    white = noteName.length() == 2;
     so = so_;
     
     hue = hue_;
     saturation = white ? 0 : 100;
     brightness = white ? 100 : 0;
     
-    freq = frequency(ansi);
+    freq = frequency(noteName);
+    so.freq(freq);
+    so.amp(0.5);
   }
   
   void setPos(float x_, float y_, float w_, float h_) {
@@ -39,25 +41,26 @@ class PianoKey {
     fill(hue, saturation, brightness);
     rect(x, y, w, h);
     
-    // We write the ansi in a visible colour at the bottom of the key
+    // We write the noteName in a visible colour at the bottom of the key
     fill(white ? BLACK : WHITE);
     textAlign(CENTER, BOTTOM);
-    text(ansi, x + w / 2, y + h);
+    text(noteName, x + w / 2, y + h);
   }
   
   void update() {
     // We play the note if the extension is enabled, and it is in a chord or if it is being pressed or clicked
-    if (extension && inChord || (mousePressed && is(hoveredKey)) || pressed) play();
+    if (extension && inChord || (mousePressed && is(getHoveredKey())) || pressed) play();
     else pause();
     
-    if (is(hoveredKey) || playing) reveal();
+    // If the note is playing or being hovered, we make it brighter, otherwise we fade it
+    if (is(getHoveredKey()) || playing) reveal();
     else hide();
   }
   
   boolean is(PianoKey other) {
-    // We check for equality with the ansis
+    // We check for equality with the noteNames
     if (other == null) return false;
-    return ansi.equals(other.ansi);
+    return noteName.equals(other.noteName);
   }
   
   void pressed(boolean shiftHeld) {
@@ -81,7 +84,8 @@ class PianoKey {
   
   void play() {
     if (!extension || playing) return; // We ignore the command if sound is off or key is already playing
-    this.so.play(freq, 0.25);
+    float volume = map(mouseY, height / 8, height, 0.25, 1);
+    env.play(so, attackTime, sustainTime, volume, volume * 4);
     playing = true;
   }
   
