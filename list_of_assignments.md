@@ -23,8 +23,8 @@
   - Course Project - Paint By Dot
 
 # CSE 1120 Structured Programming 2
-    - Exercise 1 - If, Else and Else If Statements
-    - Exercise 2 - Logic Operators
-    - Exercise 3 - While Loops
-    - Assignment 1 - Big Piano
-    - Assignment 2 - Pong
+  - Exercise 1 - If, Else and Else If Statements
+  - Exercise 2 - Logic Operators
+  - Exercise 3 - While Loops
+  - Assignment 1 - Big Piano
+  - Assignment 2 - Pong

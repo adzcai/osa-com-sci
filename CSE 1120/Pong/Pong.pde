@@ -24,20 +24,23 @@ Description (10%)  Present your program to your teacher and answer questions abo
 code and overall program. 
 */
 
-boolean extension = false;
+boolean extension = false; // Whether or not to enable the extension
 
-boolean playing;
-int resetTimer;
+int resetTimer; // Keeps track of the frame that the player "dies" so that we can wait for a second before resuming
+boolean paused;
 
-int points;
+int points; // Incremented whenever the ball hits the paddle
 
+// We declare the variables that are going to be used to store information about the game
 Board wall;
 Paddle paddle;
 Ball ball;
 
+// We initialize colours as constants before setup to avoid ambiguity
 color WHITE = color(255);
 color BLACK = color(0);
 
+// At the start, we simply set up the game and initialize variables
 void setup() {
   size(640, 480, P2D);
   textAlign(CENTER, CENTER);
@@ -46,41 +49,48 @@ void setup() {
   smooth();
   
   // We extend the wall past the top and bottom of the screen so that the ball cannot escape through the corners
+  // and initialize the objects we will use in the game
   wall = new Board(width * 63 / 64, -height / 4, width / 64, height * 5 / 4);
   paddle = new Paddle();
   ball = new Ball();
   
+  paused = false;
   points = 0;
-  playing = true;
+  resetTimer = -1;
 }
 
 void draw() {
+  // TODO: set up a menu screen
+  if (paused) {
+    return;
+  }
+  
+  // We update all of the game's components before drawing each frame
   update();
   
-  if (playing) {
-    background(BLACK);
-    text(points, width / 2, height / 8);
-    wall.show();
-    paddle.show();
-    ball.show();
+  // We draw all of the components
+  background(BLACK);
+  text(points, width / 2, height / 8);
+  wall.show();
+  paddle.show();
+  ball.show();
+}
+
+void keyPressed() {
+  if (key == ' ') {
+    paused = !paused;
   }
 }
 
 void update() {
-  if (playing) {
+  // We know the game is paused, so we test to see if we should resume it yet (after 1 second)
+  // If we do, we simply reset the ball and set playing to true
+  if (resetTimer >= 0 && frameCount > resetTimer + frameRate) {
+    ball = new Ball();
+    resetTimer = -1;
+  } else {
+    // We update the components. Remember above, this is only called as long as the game is not paused.
     ball.update();
     paddle.update();
-  } else if (frameCount > resetTimer + frameRate) { // We know the game is paused, so we
-    // test to see if we should resume it yet (after 1 second)
-    ball = new Ball();
-    playing = true;
   }
-}
-
-void pause() {
-  points = 0;
-  playing = false;
-  
-  text("GAME OVER", width / 2, height / 2);
-  resetTimer = frameCount;
 }
