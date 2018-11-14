@@ -28,7 +28,6 @@ boolean extension = false; // Whether or not to enable the extension
 
 int resetTimer; // Keeps track of the frame that the player "dies" so that we can wait for a second before resuming
 boolean paused;
-
 int points; // Incremented whenever the ball hits the paddle
 
 // We declare the variables that are going to be used to store information about the game
@@ -36,9 +35,18 @@ Board wall;
 Paddle paddle;
 Ball ball;
 
+// Fonts and strings for displaying the menu
+PFont titleFont;
+PFont labelFont;
+ArrayList<Effect> effects = new ArrayList<Effect>();
+int selection;
+
 // We initialize colours as constants before setup to avoid ambiguity
 color WHITE = color(255);
 color BLACK = color(0);
+color YELLOW = color(255, 255, 0);
+color RED = color(255, 0, 0);
+color GREEN = color(0, 0, 255);
 
 // At the start, we simply set up the game and initialize variables
 void setup() {
@@ -47,6 +55,7 @@ void setup() {
   noStroke();
   frameRate(60);
   smooth();
+  background(BLACK);
   
   // We extend the wall past the top and bottom of the screen so that the ball cannot escape through the corners
   // and initialize the objects we will use in the game
@@ -54,43 +63,93 @@ void setup() {
   paddle = new Paddle();
   ball = new Ball();
   
-  paused = false;
+  titleFont = createFont("Arial", min(width, height) / 16, true);
+  labelFont = createFont("Arial", min(width, height) / 24, true);
+  
+  // See Effects.pde
+  initEffects();
+  
+  // We begin with the game paused to show the menu
+  paused = true;
   points = 0;
   resetTimer = -1;
 }
 
 void draw() {
-  // TODO: set up a menu screen
   if (paused) {
-    return;
+    showMenu();
+  } else {
+    background(BLACK);
+    
+    // We update all of the game's components before drawing each frame
+    update();
+    
+    fill(WHITE);
+    textFont(titleFont);
+    text(points, width / 2, height / 8);
+    
+    wall.show();
+    paddle.show();
+    ball.show();
   }
-  
-  // We update all of the game's components before drawing each frame
-  update();
-  
-  // We draw all of the components
-  background(BLACK);
-  text(points, width / 2, height / 8);
-  wall.show();
-  paddle.show();
-  ball.show();
 }
 
 void keyPressed() {
-  if (key == ' ') {
-    paused = !paused;
+  if (key == ' ') paused = !paused;
+  
+  if (paused && key == CODED) {
+    switch (keyCode) {
+      // If the user presses the up button, we move the selection up, and vice versa
+      case UP:
+        if (selection > 0) selection--;
+        break;
+      case DOWN:
+        if (selection < effects.size() - 1) selection++;
+        break;
+    }
+  } else if (key == ENTER || key == RETURN) {
+    // We toggle the selected effect
+    effects.get(selection).enabled = !effects.get(selection).enabled;
+  }
+}
+
+void showMenu() {
+  fill(WHITE);
+  textFont(titleFont);
+  text("Pong", width / 2, height / 4);
+  
+  textFont(labelFont);
+  text("By Alex Cai\n" +
+    "Press space to pause/resume", width / 2, height / 3);
+  
+  int y = height / 2;
+  float textHeight = textAscent() + textDescent();
+  for (int i = 0; i < effects.size(); i++) {
+    // If it is selected, we hightlight in yellow. Otherwise, we highlight in green if it is enabled and red if it is not
+    if (selection == i) fill(YELLOW);
+    else fill(effects.get(i).enabled ? GREEN : RED);
+    
+    text(effects.get(i).desc, width / 2, y);
+    y += textHeight;
   }
 }
 
 void update() {
-  // We know the game is paused, so we test to see if we should resume it yet (after 1 second)
+  // We know the game is not paused, so we test to see if the player has recently died and we should resume it yet (after 1 second)
   // If we do, we simply reset the ball and set playing to true
-  if (resetTimer >= 0 && frameCount > resetTimer + frameRate) {
-    ball = new Ball();
-    resetTimer = -1;
+  if (resetTimer >= 0) {
+    if (frameCount > resetTimer + frameRate) {
+      ball = new Ball();
+      resetTimer = -1;
+    } else {
+      fill(WHITE);
+      textFont(titleFont);
+      text("GAME OVER", width / 2, height / 2);
+    }
   } else {
     // We update the components. Remember above, this is only called as long as the game is not paused.
     ball.update();
     paddle.update();
+    for (Effect e : effects) e.update();
   }
 }

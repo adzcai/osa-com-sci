@@ -49,6 +49,7 @@ class Paddle extends Board {
 class Ball {
   PVector pos, vel;
   int r;
+  color c;
   
   Ball() {
     r = min(width, height) / 64;
@@ -56,10 +57,12 @@ class Ball {
     
     // We set the angle to be inbetween 45 degrees and negative 45 degrees, facing the wall. r scales with the size of the board and seems to be a reasonable speed
     vel = PVector.fromAngle(random(PI / 4, -PI / 4)).setMag(r);
+    c = WHITE;
   }
   
   void show() {
-    fill(WHITE);
+    fill(c);
+    noStroke();
     ellipse(pos.x, pos.y, r, r);
   }
   
@@ -78,17 +81,22 @@ class Ball {
       vel.rotate(heading);
       
       // If it would cause the vel to point backwards, we simply set it to 80 degrees
-      if (abs(vel.heading()) > PI/2)
+      if (vel.heading() > PI/2)
         vel = PVector.fromAngle(radians(80)).setMag(r);
+      if (vel.heading() < PI/2)
+        vel = PVector.fromAngle(radians(-80)).setMag(r);
         
       // The player scores a point whenever the paddle touches the ball
       points++;
+      
+      changeColoursIfEnabled();
     }
     
     // If the rightmost point of the ball connects with the wall, we just flip the velocity horizontally
     if (wall.contains(pos.x + r, pos.y)) {
       vel.x *= -1;
       pos.x = wall.pos.x - r;
+      changeColoursIfEnabled();
     }
     
     // We handle vertical collision similarly- if the topmost or bottommost point of the ball goes beyond the screen,
@@ -101,40 +109,15 @@ class Ball {
       pos.y = height - r;
     }
     
-    // If the ball goes beyond the left edge of the screen (and the game isn't waiting to restart), the player has missed it and we pause
+    // If the ball goes beyond the left edge of the screen (and the game isn't waiting to restart), the player has missed it and we draw game over,
     if (pos.x - r <= 0 && resetTimer == -1) {
-      fill(WHITE);
-      text("GAME OVER", width / 2, height / 2);
       resetTimer = frameCount;
-    } else {
-      pos.add(vel);
-    }
+    } else pos.add(vel);
   }
   
-  //PVector getCorner(int direction) {
-  //  float x, y;
-    
-  //  switch (direction) {
-  //    case UP:
-  //      x = pos.x;
-  //      y = pos.y - r;
-  //      break;
-  //    case RIGHT:
-  //      x = pos.x + r;
-  //      y = pos.y;
-  //      break;
-  //    case DOWN:
-  //      x = pos.x;
-  //      y = pos.y + r;
-  //      break;
-  //    case LEFT:
-  //      x = pos.x - r;
-  //      y = pos.y;
-  //      break;
-  //    default:
-  //      throw new Error("Invalid direction passed");
-  //  }
-    
-  //  return new PVector(x, y);
-  //}
+  void changeColoursIfEnabled() {
+    for (Effect e : effects) {
+      if (e.desc.equals("Change color on bounce") && e.enabled) c = color(random(255), random(255), random(255));
+    }
+  }
 }
