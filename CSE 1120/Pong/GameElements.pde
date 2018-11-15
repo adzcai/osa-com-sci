@@ -19,6 +19,10 @@ class Board {
   }
   
   // A simple check to see if (x, y) is within this rectangle's boundaries
+  boolean contains(PVector p) {
+    return contains(p.x, p.y);
+  }
+  
   boolean contains(float x, float y) {
     return pos.x < x && x < pos.x + w && pos.y < y && y < pos.y + h;
   }
@@ -82,9 +86,9 @@ class Ball {
       
       // If it would cause the vel to point backwards, we simply set it to 80 degrees
       if (vel.heading() > PI/2)
-        vel = PVector.fromAngle(radians(80)).setMag(r);
-      if (vel.heading() < PI/2)
-        vel = PVector.fromAngle(radians(-80)).setMag(r);
+        vel = PVector.fromAngle(radians(80)).setMag(vel.mag());
+      if (vel.heading() < -PI/2)
+        vel = PVector.fromAngle(radians(-80)).setMag(vel.mag());
         
       // The player scores a point whenever the paddle touches the ball
       points++;
@@ -92,8 +96,8 @@ class Ball {
       changeColoursIfEnabled();
     }
     
-    // If the rightmost point of the ball connects with the wall, we just flip the velocity horizontally
-    if (wall.contains(pos.x + r, pos.y)) {
+    // If the rightmost point of the ball goes past with the wall, we just flip the velocity horizontally
+    if (pos.x + r > wall.pos.x) {
       vel.x *= -1;
       pos.x = wall.pos.x - r;
       changeColoursIfEnabled();
@@ -109,15 +113,19 @@ class Ball {
       pos.y = height - r;
     }
     
-    // If the ball goes beyond the left edge of the screen (and the game isn't waiting to restart), the player has missed it and we draw game over,
+    // If the ball goes beyond the left edge of the screen (and the game isn't waiting to restart), the player has missed it.
+    // We draw game over and restart the powerups
     if (pos.x - r <= 0 && resetTimer == -1) {
       resetTimer = frameCount;
+      for (Powerup p : powerups) p.enabled = false;
+      powerupsOnScreen.clear();
     } else pos.add(vel);
   }
   
+  // If the color
   void changeColoursIfEnabled() {
-    for (Effect e : effects) {
-      if (e.desc.equals("Change color on bounce") && e.enabled) c = color(random(255), random(255), random(255));
-    }
+    for (Effect e : effects)
+      if (e.desc.equals("Change color on bounce"))
+        c = e.enabled ? color(random(255), random(255), random(255)) : WHITE;
   }
 }

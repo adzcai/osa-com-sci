@@ -24,7 +24,7 @@ Description (10%)  Present your program to your teacher and answer questions abo
 code and overall program. 
 */
 
-boolean extension = false; // Whether or not to enable the extension
+import java.util.Iterator;
 
 int resetTimer; // Keeps track of the frame that the player "dies" so that we can wait for a second before resuming
 boolean paused;
@@ -38,8 +38,12 @@ Ball ball;
 // Fonts and strings for displaying the menu
 PFont titleFont;
 PFont labelFont;
-ArrayList<Effect> effects = new ArrayList<Effect>();
+ArrayList<Effect> effects;
 int selection;
+
+// Powerups
+ArrayList<Powerup> powerups;
+ArrayList<PowerupIcon> powerupsOnScreen;
 
 // We initialize colours as constants before setup to avoid ambiguity
 color WHITE = color(255);
@@ -51,9 +55,12 @@ color GREEN = color(0, 0, 255);
 // At the start, we simply set up the game and initialize variables
 void setup() {
   size(640, 480, P2D);
-  textAlign(CENTER, CENTER);
-  noStroke();
   frameRate(60);
+  
+  imageMode(CENTER);
+  textAlign(CENTER, CENTER);
+  
+  noStroke();
   smooth();
   background(BLACK);
   
@@ -66,8 +73,13 @@ void setup() {
   titleFont = createFont("Arial", min(width, height) / 16, true);
   labelFont = createFont("Arial", min(width, height) / 24, true);
   
-  // See Effects.pde
+  effects = new ArrayList<Effect>();
+  powerups = new ArrayList<Powerup>();
+  powerupsOnScreen = new ArrayList<PowerupIcon>();
+  
+  // See Effects.pde and Powerups.pde
   initEffects();
+  initPowerups();
   
   // We begin with the game paused to show the menu
   paused = true;
@@ -151,5 +163,22 @@ void update() {
     ball.update();
     paddle.update();
     for (Effect e : effects) e.update();
+    for (Powerup p : powerups) {
+      println(p.desc, p.enabled);
+      p.update();
+    }
+    
+    Iterator itr = powerupsOnScreen.iterator();
+    while (itr.hasNext()) { // We use an iterator to be able to remove items more efficiently
+      PowerupIcon pi = (PowerupIcon) itr.next();
+      pi.show();
+      pi.pos.add(pi.vel);
+      
+      if (pi.pos.x < 0)
+        itr.remove();
+      else if (paddle.contains(pi.pos)) // The player catches the icon
+        for (Powerup p : powerups)
+          if (p.desc == pi.desc) p.enabled = true;
+    }
   }
 }
