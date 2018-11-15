@@ -163,10 +163,6 @@ void update() {
     ball.update();
     paddle.update();
     for (Effect e : effects) e.update();
-    for (Powerup p : powerups) {
-      println(p.desc, p.enabled);
-      p.update();
-    }
     
     Iterator itr = powerupsOnScreen.iterator();
     while (itr.hasNext()) { // We use an iterator to be able to remove items more efficiently
@@ -178,7 +174,7 @@ void update() {
         itr.remove();
       else if (paddle.contains(pi.pos)) // The player catches the icon
         for (Powerup p : powerups)
-          if (p.desc == pi.desc) p.enabled = true;
+          if (p.desc == pi.desc) p.update();
     }
   }
 }

@@ -1,32 +1,29 @@
 void initPowerups() {
-  powerups.add(new Powerup("Grow paddle", "redmushroom.png", width / 32, width / 32, 5) {
+  powerups.add(new Powerup("Grow paddle", "redmushroom.png", width / 32, width / 32, 7) {
     @Override
     public void update() {
-      if (enabled)
-        paddle.h = height / 4;
-      else
-        paddle.h = height / 6;
+      paddle.h *= 5.0 / 4;
+    }
+  });
+
+  powerups.add(new Powerup("Shrink paddle", "thundercloud.png", width / 32, width / 32, 5) {
+    @Override
+    public void update() {
+      paddle.h *= 4.0 / 5;
     }
   });
   
   powerups.add(new Powerup("Speed up", "speedup.png", width / 32, width / 32, 10) {
     @Override
     public void update() {
-      if (enabled) // We simply speed up the ball
-        ball.vel.setMag(ball.r * 2);
-      else
-        ball.vel.setMag(ball.r);
+      ball.vel.mult(3.0 / 2);
     }
   });
   
   powerups.add(new Powerup("Slow down", "slowdown.png", width / 32, width / 32, 10) {
     @Override
     public void update() {
-      if (enabled) { // We simply speed up the ball
-        ball.vel.setMag(ball.r / 2);
-        getPowerupByName("Speed up").enabled = false;
-      } else
-        ball.vel.setMag(ball.r);
+      ball.vel.mult(2.0 / 3);
     }
   });
 }
@@ -58,6 +55,8 @@ class Powerup extends Effect {
     
     rarity = rarity_ * frameRate;
   }
+
+  void init() {}
 }
 
 class PowerupIcon extends Powerup {

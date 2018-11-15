@@ -3,10 +3,10 @@ class Board {
   // Keep track of the board's coordinates and dimensions
   // We store the position in a vector for easier physics manipulation
   PVector pos;
-  int w, h;
+  float w, h;
   
   // Initialize it the same way we would a rect
-  Board(int x_, int y_, int w_, int h_) {
+  Board(float x_, float y_, float w_, float h_) {
     pos = new PVector(x_, y_);
     w = w_;
     h = h_;
@@ -119,7 +119,9 @@ class Ball {
       resetTimer = frameCount;
       for (Powerup p : powerups) p.enabled = false;
       powerupsOnScreen.clear();
-    } else pos.add(vel);
+    } else {
+      pos.add(vel);
+    };
   }
   
   // If the color
