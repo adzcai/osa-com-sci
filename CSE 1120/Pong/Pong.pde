@@ -24,10 +24,11 @@ Description (10%)  Present your program to your teacher and answer questions abo
 code and overall program. 
 */
 
-import java.util.Iterator;
+boolean extension = false; // Whether or not to enable the extension
 
 int resetTimer; // Keeps track of the frame that the player "dies" so that we can wait for a second before resuming
 boolean paused;
+
 int points; // Incremented whenever the ball hits the paddle
 
 // We declare the variables that are going to be used to store information about the game
@@ -35,34 +36,17 @@ Board wall;
 Paddle paddle;
 Ball ball;
 
-// Fonts and strings for displaying the menu
-PFont titleFont;
-PFont labelFont;
-ArrayList<Effect> effects;
-int selection;
-
-// Powerups
-ArrayList<Powerup> powerups;
-ArrayList<PowerupIcon> powerupsOnScreen;
-
 // We initialize colours as constants before setup to avoid ambiguity
 color WHITE = color(255);
 color BLACK = color(0);
-color YELLOW = color(255, 255, 0);
-color RED = color(255, 0, 0);
-color GREEN = color(0, 0, 255);
 
 // At the start, we simply set up the game and initialize variables
 void setup() {
   size(640, 480, P2D);
-  frameRate(60);
-  
-  imageMode(CENTER);
   textAlign(CENTER, CENTER);
-  
   noStroke();
+  frameRate(60);
   smooth();
-  background(BLACK);
   
   // We extend the wall past the top and bottom of the screen so that the ball cannot escape through the corners
   // and initialize the objects we will use in the game
@@ -70,111 +54,43 @@ void setup() {
   paddle = new Paddle();
   ball = new Ball();
   
-  titleFont = createFont("Arial", min(width, height) / 16, true);
-  labelFont = createFont("Arial", min(width, height) / 24, true);
-  
-  effects = new ArrayList<Effect>();
-  powerups = new ArrayList<Powerup>();
-  powerupsOnScreen = new ArrayList<PowerupIcon>();
-  
-  // See Effects.pde and Powerups.pde
-  initEffects();
-  initPowerups();
-  
-  // We begin with the game paused to show the menu
-  paused = true;
+  paused = false;
   points = 0;
   resetTimer = -1;
 }
 
 void draw() {
+  // TODO: set up a menu screen
   if (paused) {
-    showMenu();
-  } else {
-    background(BLACK);
-    
-    // We update all of the game's components before drawing each frame
-    update();
-    
-    fill(WHITE);
-    textFont(titleFont);
-    text(points, width / 2, height / 8);
-    
-    wall.show();
-    paddle.show();
-    ball.show();
+    return;
   }
+  
+  // We update all of the game's components before drawing each frame
+  update();
+  
+  // We draw all of the components
+  background(BLACK);
+  text(points, width / 2, height / 8);
+  wall.show();
+  paddle.show();
+  ball.show();
 }
 
 void keyPressed() {
-  if (key == ' ') paused = !paused;
-  
-  if (paused && key == CODED) {
-    switch (keyCode) {
-      // If the user presses the up button, we move the selection up, and vice versa
-      case UP:
-        if (selection > 0) selection--;
-        break;
-      case DOWN:
-        if (selection < effects.size() - 1) selection++;
-        break;
-    }
-  } else if (key == ENTER || key == RETURN) {
-    // We toggle the selected effect
-    effects.get(selection).enabled = !effects.get(selection).enabled;
-  }
-}
-
-void showMenu() {
-  fill(WHITE);
-  textFont(titleFont);
-  text("Pong", width / 2, height / 4);
-  
-  textFont(labelFont);
-  text("By Alex Cai\n" +
-    "Press space to pause/resume", width / 2, height / 3);
-  
-  int y = height / 2;
-  float textHeight = textAscent() + textDescent();
-  for (int i = 0; i < effects.size(); i++) {
-    // If it is selected, we hightlight in yellow. Otherwise, we highlight in green if it is enabled and red if it is not
-    if (selection == i) fill(YELLOW);
-    else fill(effects.get(i).enabled ? GREEN : RED);
-    
-    text(effects.get(i).desc, width / 2, y);
-    y += textHeight;
+  if (key == ' ') {
+    paused = !paused;
   }
 }
 
 void update() {
-  // We know the game is not paused, so we test to see if the player has recently died and we should resume it yet (after 1 second)
+  // We know the game is paused, so we test to see if we should resume it yet (after 1 second)
   // If we do, we simply reset the ball and set playing to true
-  if (resetTimer >= 0) {
-    if (frameCount > resetTimer + frameRate) {
-      ball = new Ball();
-      resetTimer = -1;
-    } else {
-      fill(WHITE);
-      textFont(titleFont);
-      text("GAME OVER", width / 2, height / 2);
-    }
+  if (resetTimer >= 0 && frameCount > resetTimer + frameRate) {
+    ball = new Ball();
+    resetTimer = -1;
   } else {
     // We update the components. Remember above, this is only called as long as the game is not paused.
     ball.update();
     paddle.update();
-    for (Effect e : effects) e.update();
-    
-    Iterator itr = powerupsOnScreen.iterator();
-    while (itr.hasNext()) { // We use an iterator to be able to remove items more efficiently
-      PowerupIcon pi = (PowerupIcon) itr.next();
-      pi.show();
-      pi.pos.add(pi.vel);
-      
-      if (pi.pos.x < 0)
-        itr.remove();
-      else if (paddle.contains(pi.pos)) // The player catches the icon
-        for (Powerup p : powerups)
-          if (p.desc == pi.desc) p.update();
-    }
   }
 }

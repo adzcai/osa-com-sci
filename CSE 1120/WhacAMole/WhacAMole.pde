@@ -31,8 +31,8 @@ int numHoles = 5;
 ArrayList<Hole> holes;
 Hammer hammer;
 
-int hits = 0;
-int mins = 0;
+int points = 0; // 3 minutes = 3 * 60 seconds = 3 * 60 * 1000 milliseconds
+int numMillis = 3 * 60 * 1000;
 
 // We set up the screen, drawing a square window
 void setup() {
@@ -49,154 +49,19 @@ void setup() {
 }
 
 void draw() {
-  hammer.update();
-  for (Hole h : holes) h.update();
-  
   background(LIGHT_BLUE);
+  
+  for (Hole h : holes) h.update();
+  hammer.update();
+  
   for (Hole h : holes) h.show();
   hammer.show();
+  
+  fill(BLACK);
+  int remainingSeconds = (numMillis - millis()) / 1000;
+  text(String.format("%d%n%02d:%02d", points, remainingSeconds / 60, remainingSeconds % 60), width / 2, height / 8);
 }
 
 void mousePressed() {
-  hammer.direction = 1;
-}
-
-class Hammer {
-  float w, len, cornerR;
-  int direction;
-  float angle, speed;
-  PShape shape;
-  
-  Hammer() {
-    shape = createShape(GROUP);
-  
-    w = width / 32;
-    len = w * 4;
-    cornerR = width / 128;
-    
-    PShape handle = createShape(RECT, -w / 2, -len + w / 2, w, len, cornerR);
-    handle.setFill(BROWN);
-    shape.addChild(handle);
-    
-    PShape head = createShape(RECT, -w, -len + w, w * 2, w, cornerR);
-    head.setFill(BLACK);
-    shape.addChild(head);
-    
-    speed = PI / 2 / frameRate;
-    angle = 0;
-  }
-  
-  void update() {
-    if (direction == 1) {
-      angle += speed;
-      if (angle >= PI / 2) direction = -1;
-    } else if (direction == -1) {
-      angle -= speed;
-      if (angle <= 0) direction = 0;
-    }
-  }
-  
-  void show() {
-    pushMatrix();
-    translate(mouseX, mouseY);
-    rotate(hammer.angle);
-    shape(shape);
-    popMatrix();
-  }
-}
-
-class Hole {
-  PVector pos;
-  float diameter;
-  Mole mole;
-  
-  Hole(float x, float y) {
-    pos = new PVector(x, y);
-    diameter = width / 8;
-    mole = new Mole(this);
-  }
-  
-  void update() {
-    mole.update();
-  }
-  
-  void show() {
-    fill(BLACK);
-    ellipse(pos.x, pos.y, diameter, diameter);
-    mole.show();
-  }
-}
-
-class Mole {
-  boolean visible;
-  PVector pos;
-  
-  float speed;
-  Hole hole;
-  
-  int direction;
-  int startFrame, upFrame, downFrame, endFrame;
-  float upTime;
-  float spacing;
-  
-  PShape shape;
-  
-  Mole(Hole hole_) {
-    hole = hole_;
-    pos = new PVector(hole.pos.x, hole.pos.y + hole.diameter / 2);
-    visible = false;
-    speed = hole.diameter * 2 / frameRate;
-    
-    // We want the mole to stay up for a second, and appear every 2 seconds
-    startFrame = upFrame = downFrame = endFrame = 0;
-    upTime = frameRate * 2;
-    spacing = frameRate * 8;
-    
-    float r = width / 48;
-    
-    shape = createShape(GROUP);
-    PShape head = createShape(ELLIPSE, 0, 0, r * 2, r * 2);
-    PShape body = createShape(RECT, -r, 0, r * 2, r * 2);
-    PShape tail = createShape(ELLIPSE, 0, r * 2, r * 2, r * 2);
-    
-    shape.addChild(head);
-    shape.addChild(body);
-    shape.addChild(tail);
-    
-    shape.setFill(BROWN);
-  }
-  
-  void update() {
-    println(startFrame, upFrame, downFrame, endFrame);
-    if (frameCount - endFrame >= spacing) { // If enough time has passed since it went down
-      visible = true; // Make it visible
-      direction = -1; // We make it start going up
-      startFrame = frameCount; // Record the current frame
-    }
-    
-    // If the mole has been up for long enough, we start moving it down
-    if (upFrame > startFrame && frameCount - upFrame >= upTime) direction = 1;
-    
-    if (direction == -1) {
-      pos.y -= speed;
-      if (pos.y <= hole.pos.y - hole.diameter / 2) { // If the mole reaches the top
-        pos.y = hole.pos.y - hole.diameter / 2; // We set it to the top so that it does not go past
-        direction = 0; // Stop it from moving
-        upFrame = frameCount; // Record the current frame
-      }
-    } else if (direction == 1) {
-      pos.y += speed;
-      if (pos.y >= hole.pos.y + hole.diameter / 2) { // If the mole has retreated back into the hole
-        visible = false; // We set its visibility to false
-        direction = 0; // We stop it from moving
-        endFrame = frameCount; // And record the current frame
-      }
-    }
-  }
-  
-  void show() {
-    if (!visible) return;
-    translate(pos.x, pos.y);
-    shape(shape);
-  }
+  hammer.direction = 1; // We swing the hammer downwards
 }
