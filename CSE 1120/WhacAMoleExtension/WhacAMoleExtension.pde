@@ -48,7 +48,7 @@ int millisPaused = 0;
 
 // We set up the screen, drawing a square window
 void setup() {
-  size(640, 640, P2D);
+  size(640, 640, P3D);
   noStroke();
   ellipseMode(CENTER);
   textAlign(CENTER, CENTER);

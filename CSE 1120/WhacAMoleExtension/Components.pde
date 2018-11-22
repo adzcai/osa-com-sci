@@ -15,9 +15,18 @@ class Hammer {
     shape = createShape(GROUP); // We create the shape of the hammer by combining two rectangles
     
     // The handle
-    PShape handle = createShape(RECT, -w / 2, -len + w / 2, w, len, cornerR * 2);
-    handle.setFill(BROWN);
-    shape.addChild(handle);
+    PShape handle = createShape();
+    
+    // 24 is the number of sides we use to make a realistic triangle
+    float theta = 2 * PI / 24;
+    handle.beginShape(TRIANGLE_STRIP);
+    for (int i = 0; i < 25; i++) {
+      float x = cos(i * theta) * w;
+      float y = sin(i * theta) * w;
+      handle.vertex(x, y, len);
+      handle.vertex(x, y, -len);
+    }
+    handle.endShape(CLOSE); 
     
     // And the head
     PShape head = createShape(RECT, -w, -len + w, w * 2, w, cornerR);
