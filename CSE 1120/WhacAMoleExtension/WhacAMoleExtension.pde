@@ -44,10 +44,11 @@ PShape gameBox;
 
 // Variables to track the state of the game
 int points = 0; // 1 minute =  60 seconds = 60 * 1000 milliseconds
-int numMillis = 60 * 1000;
+final int playTime = 60 * 1000;
 int resetMillis = 0;
 int remainingSeconds = 0;
-int millisPaused = 0;
+int millisBeginPause = 0;
+int prevMillis = 0;
 
 float cameraY;
 float cameraX;
@@ -60,7 +61,7 @@ void setup() {
   textAlign(CENTER, CENTER);
   frameRate(60);
   
-  titleFont = createFont("Arial", height / 16);
+  titleFont = createFont("Arial", height / 24);
   labelFont = createFont("Arial", height / 32);
   
   // We initialize the arraylist of holes, making sure that the balls are spaced evenly along the width, and alternating the height
@@ -72,6 +73,7 @@ void setup() {
   }
   hammer = new Hammer();
   gameBox = cylinder(4, sqrt(pow(width / 2, 2) + pow(height / 2, 2)), height / 2);
+  gameBox.setFill(BOX_COLOR);
   gameBox.rotateY(PI / 4);
   
   cameraY = 0;
@@ -102,20 +104,27 @@ void draw() {
   for (Hole h : holes) h.show();
   hammer.show();
   
+  // We take the amount of time the user gets to play, add the amount of time that has been paused since we don't want it to count,
+  // and subtract the current time, finally dividing by 1000 to convert from milliseconds to seconds.
+  remainingSeconds = (playTime + resetMillis - millis()) / 1000;
+  
   // We display the points and the remaining time
+  pushMatrix(); // This saves the current matrix of transformations so that we can return to it later
   fill(BLACK);
-  remainingSeconds = (numMillis - millis() + resetMillis) / 1000;
-  textFont(labelFont);
-  text(String.format("%d%n%02d:%02d", points, remainingSeconds / 60, remainingSeconds % 60), width / 2, height / 8);
+  textFont(titleFont);
+  translate(0, -height / 32); // Shift a little above the board so that the text is visible
+  rotateX(PI / 2); // So that we draw the text lying flat against the box
+  text(String.format("%d%n%02d:%02d", points, remainingSeconds / 60, remainingSeconds % 60), 0, 0); // We display the number of points
+  popMatrix();
   
   // If it is 0, we pause the game
   if (remainingSeconds <= 0) pause();
   
-  if (keyPressed && key == CODED) {
-    if (keyCode == LEFT) cameraX -= width / 16;
-    if (keyCode == RIGHT) cameraX += width / 16; 
-    if (keyCode == UP) cameraY -= height / 16;
-    if (keyCode == DOWN) cameraY += height / 16;
+  if (keyPressed && key == CODED) { // If the arrow keys are pressed, we move the camera
+    if (keyCode == LEFT) cameraX -= width / 32;
+    if (keyCode == RIGHT) cameraX += width / 32; 
+    if (keyCode == UP) cameraY -= height / 32;
+    if (keyCode == DOWN) cameraY += height / 32;
   }
 }
 
@@ -131,57 +140,36 @@ void mousePressed() {
 }
 
 void pause() {
-  millisPaused = millis(); // We track the number of milliseconds, so we can continue where we left off
+  millisBeginPause = millis(); // We track the number of milliseconds, so we can continue where we left off
   paused = true; // pause
 }
 
 void unpause() {
-  if (remainingSeconds <= 0) points = 0; // If time has ran out, we reset the state of the game
-  resetMillis += millis() - millisPaused; // We add the amount of time paused, so that the timer resumes where we left off
+  if (remainingSeconds <= 0) { // If time has ran out, we reset the state of the game
+    points = 0;
+    resetMillis = millis(); // We pretend that the player has been paused this whole time, so that the timer restarts from playTime
+    remainingSeconds = playTime; // We reset the player's remaining time
+  } else {
+    resetMillis += millis() - millisBeginPause; // We add the amount of time paused, so that the timer resumes where we left off
+  }
+  
   paused = false; // unpause
 }
 
-PShape gameBox() {
-  PShape s = createShape();
-  s.setFill(BOX_COLOR);
-  s.beginShape(QUAD_STRIP);
-  s.vertex(-width / 2, -height / 2);
-  s.vertex(width / 2, -height / 2);
-  s.vertex(width / 2, height / 2);
-  s.vertex(-width / 2, height / 2);
-  s.vertex(-width / 2, -height / 2);
-  
-  for (Hole h : holes) {
-    println("h.pos.x", h.pos.x, "h.pos.y", h.pos.y);
-    s.beginContour();
-    for (int i = 12; i >= 0; i--) {
-      float theta = i * 2 * PI / 12;
-      s.vertex(h.pos.x + h.r * cos(theta), h.pos.y + h.r * sin(theta));
-      println(h.pos.x + h.r * cos(theta), h.pos.y + h.r * sin(theta));
-    }
-    s.endContour();
-  }
-  
-  s.endShape();
-  
-  return s;
-}
-
-/**
- * @returns a PShape of a {sides}-sided prism of radius r and height h
- */
+// returns a PShape of a {sides}-sided prism of radius r and height h
 PShape cylinder(int sides, float r, float h) {
-  PShape result = createShape(GROUP);
-  float theta = 2 * PI / sides;
-  PShape cyl = createShape();
-  PShape face1 = createShape();
+  PShape result = createShape(GROUP); // Create a group shape that we add...
+  PShape cyl = createShape(); // The main loop
+  PShape face1 = createShape(); // and the two faces to
   PShape face2 = createShape();
+  
+  float theta = 2 * PI / sides; // The angle that we rotate for each vertex
   
   cyl.beginShape(TRIANGLE_STRIP);
   face1.beginShape();
   face2.beginShape();
   
-  for (int i = 0; i < sides; i++) {
+  for (int i = 0; i < sides; i++) { // We draw each side by converting (theta, r) to Cartesian coordinates
     cyl.vertex(r * cos(i * theta), 0, r * sin(i * theta));
     face1.vertex(r * cos(i * theta), 0, r * sin(i * theta));
     cyl.vertex(r * cos(i * theta), h, r * sin(i * theta));

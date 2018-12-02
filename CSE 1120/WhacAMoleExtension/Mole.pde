@@ -16,19 +16,18 @@ class Mole {
   PShape shape;
   
   Mole(Hole hole_) {
-    hole = hole_;
-    pos = new PVector(hole.pos.x, 0, hole.pos.y);
-    visible = false;
-    speed = hole.r * 4 / frameRate;
+    hole = hole_; // Each mole needs a hole
+    pos = new PVector(hole.pos.x, 0, hole.pos.y); // Sorry for the inconsistency, but we create a three dimensional vector with the hole's position
+    visible = false; // They all begin off the screen
+    speed = hole.r * 4 / frameRate; // The speed it goes up and down should be quite fast: in this case, about a quarter of a second
     
-    // We want the mole to stay up for a second, and appear every 2 seconds
+    // We initialize the variables that are to track its state
     startFrame = upFrame = downFrame = endFrame = 0;
-    upTime = frameRate * 8;
-    spacing = random(frameRate * 10); // We have a great range for the initial frameRate so that hopefully they start springing up
-    // apart from each other
+    upTime = frameRate * 8; // The amount of time that the mole stays up for
+    spacing = random(frameRate * 10); // We have a great range for the initial frameRate so that hopefully they start springing up apart from each other
     
-    r = hole.r * 2 / 3;
-    maxY = -r * 2;
+    r = hole.r * 2 / 3; // The mole's radius is 2/3ds that of its hole's
+    maxY = -r * 2; // The maximum height that the mole can pop up is just its head and a part of its body
     
     // We create the shape of the mole-- basically a stretched out sausage made of a square with a circle on two opposite ends
     shape = createShape(GROUP);
@@ -41,18 +40,21 @@ class Mole {
     shape.addChild(tail);
     shape.setFill(BROWN);
     
-    float whiskerLen = r * 2 / 3;
+    float whiskerLen = r * 2 / 3; // We give it whiskers
     stroke(WHITE);
     for (int i = 0; i < 3; i++) {
       float theta = (i-1) * PI / 6;
       PShape whiskerL = createShape(LINE, whiskerLen * cos(theta), whiskerLen * sin(theta), 0, 0);
       PShape whiskerR = createShape(LINE, whiskerLen * cos(theta + PI), whiskerLen * sin(theta + PI), 0, 0);
+      whiskerL.translate(0, 0, r);
+      whiskerR.translate(0, 0, r);
       shape.addChild(whiskerL);
       shape.addChild(whiskerR);
     }
     noStroke();
     
-    PShape nose = createShape(ELLIPSE, 0, 0, r / 2, r / 2);
+    PShape nose = createShape(SPHERE, r / 2);
+    nose.translate(0, 0, r);
     nose.setFill(PINK);
     shape.addChild(nose);
   }
@@ -97,9 +99,6 @@ class Mole {
   }
   
   boolean contains(float x, float y, float z) {
-    println("pos.x - r", pos.x - r, "x", x, "pos.x + r", pos.x + r);
-    println("pos.y - r", pos.y - r, "y", y, "pos.y", pos.y);
-    println("pos.z - r", pos.z - r, "z", z, "pos.z + r", pos.z + r);
     return pos.x - r < x && x < pos.x + r &&
       pos.y - r < y && y < pos.y &&
       pos.z - r < z && z < pos.z + r;
