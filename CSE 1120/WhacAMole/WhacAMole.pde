@@ -55,7 +55,7 @@ void setup() {
   frameRate(60);
   
   titleFont = createFont("Arial", height / 32);
-  labelFont = createFont("Arial", height / 64);
+  labelFont = createFont("Arial", height / 48);
   
   // We initialize the arraylist of holes, making sure that the balls are spaced evenly along the width, and alternating the height
   holes = new ArrayList<Hole>(numHoles);
@@ -106,7 +106,11 @@ void pause() {
 }
 
 void unpause() {
-  if (remainingSeconds <= 0) points = 0; // If time has ran out, we reset the state of the game
+  if (remainingSeconds <= 0) {
+    points = 0; // If time has ran out, we reset the state of the game
+    resetMillis = millis();
+    remainingSeconds = numMillis;
+  }
   resetMillis += millis() - millisPaused;
   paused = false;
 }

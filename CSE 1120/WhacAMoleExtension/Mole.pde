@@ -26,8 +26,8 @@ class Mole {
     upTime = frameRate * 8; // The amount of time that the mole stays up for
     spacing = random(frameRate * 10); // We have a great range for the initial frameRate so that hopefully they start springing up apart from each other
     
-    r = hole.r * 2 / 3; // The mole's radius is 2/3ds that of its hole's
-    maxY = -r * 2; // The maximum height that the mole can pop up is just its head and a part of its body
+    r = hole.r / 3; // The mole's radius is a third of its hole's
+    maxY = -r * 2; // The maximum height that the m ole can pop up is just its head and a part of its body
     
     // We create the shape of the mole-- basically a stretched out sausage made of a square with a circle on two opposite ends
     shape = createShape(GROUP);

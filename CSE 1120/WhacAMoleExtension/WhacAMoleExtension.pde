@@ -33,7 +33,6 @@ final color BROWN = color(165, 42, 42);
 boolean paused = true;
 
 PFont titleFont;
-PFont labelFont;
 
 // We create an array storing the holes, of which there are 5, and keep track of data
 // with other classes
@@ -57,12 +56,10 @@ float cameraX;
 void setup() {
   size(640, 640, P3D);
   noStroke();
-  ellipseMode(CENTER);
   textAlign(CENTER, CENTER);
   frameRate(60);
   
   titleFont = createFont("Arial", height / 24);
-  labelFont = createFont("Arial", height / 32);
   
   // We initialize the arraylist of holes, making sure that the balls are spaced evenly along the width, and alternating the height
   holes = new ArrayList<Hole>(numHoles);
@@ -88,10 +85,15 @@ void draw() {
   
   background(BG_COLOR);
   
-  if (paused) {
-    camera(width / 2, height / 2, width / 2, width/2, height/2, 0, 0, 1, 0);
+  if (paused) { // We set the camera to make the text look 2D
+    camera(width / 2, height / 2, height / 2, width/2, height/2, 0, 0, 1, 0);
     textFont(titleFont);
-    text("Whac-A-Mole!\nby Alexander Cai\nPress SPACE to continue.\nYour points: " + points, width / 2, height / 2);
+    text("Whac-A-Mole!\n" +
+    "by Alexander Cai\n" +
+    "Press SPACE to continue.\n" +
+    "Your points: " + points + "\n" +
+    "Use the arrow keys\n" + 
+    "to move the camera", width / 2, height / 2);
     return;
   }
   

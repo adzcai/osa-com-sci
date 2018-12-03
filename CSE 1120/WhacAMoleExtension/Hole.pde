@@ -6,7 +6,7 @@ class Hole {
   
   Hole(float x, float y) { // The hole is passed an x and y value, even though the y really represents the z.
     pos = new PVector(x, y);
-    r = width / 16; // We set its radius to a sixteenth of the width
+    r = width / 12; // We set its radius to a fraction of the width
     mole = new Mole(this); // And initialize the mole associated with this hole
   }
   
@@ -20,7 +20,7 @@ class Hole {
     pushMatrix();
     fill(BLACK);
     rotateX(PI / 2);
-    translate(pos.x, pos.y - height / 32);
+    translate(pos.x, pos.y, 1);
     ellipse(0, 0, r * 2, r * 2);
     popMatrix();
     
