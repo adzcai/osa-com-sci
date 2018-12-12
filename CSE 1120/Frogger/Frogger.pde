@@ -1,92 +1,118 @@
-/*
-Course Project - Frogger
+// In the main file, we keep the code simple, declaring a few constants and the current level.
 
-Frogger is a 1981 arcade game developed by Konami. The game starts with five frogs. These
-are counted as the player's lives, and losing them results in the end of the game, or
-"game over." The only player control is the 4 direction joystick used to navigate the
-frog; each push in a direction causes the frog to hop once in that direction. 
+// These are constants for the different types of lanes
+final int SAFETY = 0;
+final int CAR = 1;
+final int LOG = 2;
+final int DESTINATION = 3;
 
-The objective of the game is to guide each frog to one of the designated spaces at the
-top of the screen, also known as "frog homes." The frog starts at the bottom of the 
-screen, which contains a road with motor vehicles, which in various versions include 
-cars, trucks, buses, dune buggies, bulldozers, vans, taxis, bicyclists and motorcycles,
-speeding along it horizontally. The player must guide the frog between opposing lanes of
-traffic to avoid becoming roadkill, which results in a loss of one life. After the road, 
-this is a median strip where the player must prepare to navigate the river. The upper 
-portion of the screen consists of a river with logs, alligators, and turtles, all moving
-horizontally across the screen. By jumping on swiftly moving logs and the backs of turtles
-and alligators the player can guide their frog to safety. While navigating the river, the 
-player must also avoid the open mouths of alligators, snakes, and otters. The very top of
-the screen contains five "frog homes," which are the destinations for each frog. The 
-player must avoid alligators sticking out of the five "frog homes," but may catch bugs or
-escort a lady frog which appear periodically for bonuses.
+// These are constants for the different game statuses
+final int STARTING = 0;
+final int RUNNING = 1;
+final int PAUSED = 2;
+final int WON = 3;
+final int DIED = 4;
 
-When all five frogs are directed home, the game progresses to the next level with 
-increased difficulty. The player has 30 seconds to guide each frog into one of the homes;
-this timer resets whenever a life is lost or a frog reaches home safely.
-Every forward step scores 10 points, and every frog arriving safely home scores 50 
-points. 10 points are also awarded per each unused ​1⁄2 second of time. When all five 
-frogs reach home to end the level the player earns 1,000 points. 
-https://www.youtube.com/watch?v=pTftp4Cam5k
+final color[] LANECOLORS = {
+  color(0, 255, 0),
+  color(0),
+  color(0, 0, 255),
+  color(0, 255, 0)
+};
+final color[] OBSTACLECOLORS = {
+  0,
+  color(100),
+  color(165, 42, 42),
+  color(64, 128, 64)
+};
+final color REACHED = color(0, 64, 0);
 
-Program (65%) Create a program that emulates the first level of this game. Please see the
-video above for a better idea of game play. Do not worry about bonuses or a variation in 
-size of the objects going across (basically each row has the same object moving across 
-at random intervals). Do not worry about the animation of the frog.  Include comments
-describing what different sections of code do and good coding practices. 
+PFont ARCADEFONT;
 
-Extension (25%) Enhance this game including better presentation, challenge and creativity. Consider multiple levels and possible bonuses. Add some additional features and creativity of your own.
-
-Description (10%)  Present your program to your teacher and answer questions about the 
-code and overall program. 
-*/
-
-// We use variables to store the position of the frog
-Frog frog;
-Lane[] lanes;
-
-int SAFETY = 0;
-int CAR = 1;
-int LOG = 2;
-
-float grid = 50;
-
-void resetGame() {
-  frog = new Frog(width/2-grid/2, height-grid, grid);
-  frog.attach(null);
-}
+Level currentLevel;
+int status = STARTING;
 
 void setup() {
-  size(500, 550);
-  //frog = new Frog(width/2-grid/2, height-grid, grid);
-  resetGame();
-  lanes = loadLanes("level1.csv");
+  size(640, 550);
+  ARCADEFONT = createFont("arcade.ttf", height / 8); // We load in the arcade font, in the data folder
+  currentLevel = new Level(0, 0, width, height, "startscreen.csv"); // Start off the game with a level in the background
+  currentLevel.lives = 9999; // For the starting level
 }
 
 void draw() {
-  background(0); // We start with a black background
-  for (Lane lane : lanes)
-    lane.run();
-  int laneIndex = int(frog.y / grid);
-  lanes[laneIndex].check(frog);
-  frog.update();
-  frog.show();
+  // Then, if the game is starting, we draw the title text on top and occasionally randomly move the frog
+  switch (status) {
+  case STARTING:
+    currentLevel.update();
+    currentLevel.show();
+    
+    if (random(1) <= 0.1) { // 10% chance of moving the frog
+      int h = int(random(3)) - 1; // Randomly choose a direction: -1, 0, 1
+      int v = h != 0 ? 0 : int(random(3)) - 1; // If the frog moves horizontally, we don't move it vertically, and vice versa
+      currentLevel.frog.move(h, v);
+    }
+    
+    textAlign(CENTER, CENTER);
+    textFont(ARCADEFONT, height / 8);
+    text("FROGGER", width / 2, height / 3);
+    
+    textFont(ARCADEFONT, height / 12);
+    text("By Alexander Cai", width / 2, height / 2);
+    text("Press any key to begin", width / 2, height * 2 / 3);
+    break;
+  
+  case RUNNING:
+    currentLevel.update();
+    currentLevel.show();
+    break;
+  
+  case PAUSED:
+    currentLevel.show();
+    drawCenteredText("Game paused");
+    break;
+  
+  // Whether the game is starting or running, we run the level in the background first
+  case WON:
+  case DIED:
+    drawCenteredText("You " + (status == WON ? "won" : "lost") + "!\nYour Score " + currentLevel.points + "\nPress any key to restart");
+    break;
+  
+  default:
+    background(0);
+  }
 }
 
 void keyPressed() {
-  int h = keyCode == RIGHT ? 1 : (keyCode == LEFT ? -1 : 0);
-  int v = keyCode == UP ? -1 : (keyCode == DOWN ? 1 : 0);
-  frog.move(h, v);
+  switch (status) {
+  case STARTING: // If the game is showing the start screen
+  case WON: // the user just won,
+  case DIED: // or the user just died,
+  // and the user presses a key, we change the status of the game and initialize the first level
+    currentLevel = new Level(0, 0, width * 4 / 5, height, "level1.csv");
+    status = RUNNING;
+    break;
+    
+  case PAUSED:
+    status = RUNNING;
+    break;
+  
+  case RUNNING: 
+    if (key == ' ') {
+      status = PAUSED;
+      break;
+    }
+    
+    // If the game is running, we get a vertical and horizontal value for the frog to move,
+    // and pass that to the frog's move method
+    int h = keyCode == RIGHT ? 1 : (keyCode == LEFT ? -1 : 0);
+    int v = keyCode == UP ? -1 : (keyCode == DOWN ? 1 : 0);
+    currentLevel.frog.move(h, v);
+  } // We don't need a break at the end since it's the last case, and we don't care about a default case
 }
 
-Lane[] loadLanes(String path) {
-  Table data = loadTable(path, "header"); // We load the data from the table
-  Lane[] lanes = new Lane[data.getRowCount()];
-  
-  int counter = 0;
-  for (TableRow row : data.rows()) { // For each of the rows
-    lanes[counter] = new Lane(counter, row.getInt("type"), row.getInt("numObstacles"), row.getInt("len"), row.getFloat("spacing"), row.getFloat("speed"));
-    counter++;
-  }
-  return lanes;
+void drawCenteredText(String str) {
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textFont(ARCADEFONT, height / 8);
+  text(str, 0, 0, width, height);
 }
