@@ -1,10 +1,11 @@
 // In the main file, we keep the code simple, declaring a few constants and the current level.
 
-// These are constants for the different types of lanes
-final int SAFETY = 0;
-final int CAR = 1;
-final int LOG = 2;
-final int DESTINATION = 3;
+// These are constants for the different types of lanes and obstacles, which we put together for clarity
+final int NUMROADTYPES = 4;
+final int SAFETY = 0, FROG = 0;
+final int ROAD = 1, CAR = 1;
+final int STREAM = 2, LOG = 2;
+final int DESTINATION = 3, ALLIGATOR = 3;
 
 // These are constants for the different game statuses
 final int STARTING = 0;
@@ -13,19 +14,14 @@ final int PAUSED = 2;
 final int WON = 3;
 final int DIED = 4;
 
-final color[] LANECOLORS = {
-  color(0, 255, 0),
-  color(0),
-  color(0, 0, 255),
-  color(0, 255, 0)
-};
-final color[] OBSTACLECOLORS = {
-  0,
-  color(100),
-  color(165, 42, 42),
-  color(64, 128, 64)
-};
-final color REACHED = color(0, 64, 0);
+// Constants for the status of the obstacles
+final int SAFE = 0;
+final int HOSTILE = 1;
+final int REACHED = 2;
+
+color[] laneColors;
+PImage[] sprites;
+int[] hostilities;
 
 PFont ARCADEFONT;
 
@@ -35,8 +31,31 @@ int status = STARTING;
 void setup() {
   size(640, 550);
   ARCADEFONT = createFont("arcade.ttf", height / 8); // We load in the arcade font, in the data folder
-  currentLevel = new Level(0, 0, width, height, "startscreen.csv"); // Start off the game with a level in the background
-  currentLevel.lives = 9999; // For the starting level
+
+  // We could have initialized these at the beginning,
+  // but doing it in setup makes it more centralized and clear and allows us to use the constants
+  // we declared earlier
+  laneColors = new color[NUMROADTYPES];
+  laneColors[SAFETY] = color(0, 255, 0);
+  laneColors[ROAD] = color(0);
+  laneColors[STREAM] = color(0, 0, 255);
+  laneColors[DESTINATION] = color(0, 255, 0);
+
+  sprites = new PImage[NUMROADTYPES];
+  sprites[FROG] = loadImage("sprites/frog.png");
+  sprites[CAR] = loadImage("sprites/car.png");
+  sprites[LOG] = loadImage("sprites/log.png");
+  sprites[ALLIGATOR] = loadImage("sprites/alligator.png");
+
+  hostilities = new int[NUMROADTYPES];
+  hostilities[SAFETY] = SAFE;
+  hostilities[CAR] = HOSTILE;
+  hostilities[LOG] = SAFE;
+  hostilities[DESTINATION] = SAFE;
+
+  // Start off the game with a level in the background
+  currentLevel = new Level(0, 0, width, height, "levels/startscreen.csv"); 
+  currentLevel.lives = 9999; // For the starting level, we want it to keep running for a while
 }
 
 void draw() {
@@ -88,7 +107,7 @@ void keyPressed() {
   case WON: // the user just won,
   case DIED: // or the user just died,
   // and the user presses a key, we change the status of the game and initialize the first level
-    currentLevel = new Level(0, 0, width * 4 / 5, height, "level1.csv");
+    currentLevel = new Level(0, 0, width * 4 / 5, height, "levels/level1.csv");
     status = RUNNING;
     break;
     

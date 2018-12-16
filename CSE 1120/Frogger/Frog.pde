@@ -4,10 +4,12 @@ class Frog extends Rectangle {
 
   Level level;
   Obstacle attached = null; // The object, usually a log, that we are attached to
+  PImage sprite;
 
   Frog(Level level, float x, float y, float s) {
-    super(x, y, s, s, color(0, 255, 0, 200)); // The frog is a square, with a slightly transparent green color
+    super(x, y, s, s); // The frog is a square, with a slightly transparent green color
     this.level = level;
+    sprite = sprites[FROG];
   }
 
   void attach(Obstacle log) {
@@ -21,6 +23,53 @@ class Frog extends Rectangle {
       level.lives -= 1;
       level.reset();
     }
+
+    int laneIndex = int(y / level.grid); // Dividing by the grid size gives us the number of lanes above the frog, which is the same as the index of the frog's lane.
+    Lane currLane = level.lanes[laneIndex];
+
+    // We check for the frog's intersection with the obstacles
+    boolean ok = false; // This is only used if the type is LOG, but we need to initialize it here anyways.
+    // We set the frog's ok-ness to false as a default, then set it to true if he lands on a log (phew!)
+    
+    for (Obstacle o : currLane.obstacles) { // We loop through the obstacles in the lane
+      if (!intersects(o)) continue; // We return if the frog doesn't intersect it
+
+      switch (currLane.type) { // Remember, type is the type of the lane and determines what obstacles are on it
+      case CAR: // If the frog hits a car, he dies and we reset
+        level.reset(-1);
+        break;
+        
+      case LOG: // He lands on a log, he's ok and we attach to it
+        ok = true;
+        attach(o);
+        break;
+        
+      case DESTINATION: // If he reaches one of the home points
+        if (o.status == HOSTILE) { // If he reaches an alligator, he loses a life
+          level.reset(-1);
+          return;
+        } else if (o.status == REACHED) { // If he has already reached it, we just restart without consequences
+          level.reset();
+          return;
+        }
+
+        o.status = REACHED; // The frog reaches the tile, so we change its color, inc the level's points
+        level.incPoints( 50 + 5 * level.elapsed);
+        level.reset();
+        
+        boolean allReached = true;
+        // We test each obstacle if it has been reached
+        for (Obstacle endPoint : currLane.obstacles) allReached = allReached && (endPoint.status == REACHED);
+        if (allReached) {
+          level.incPoints(1000);
+          status = WON;
+        }
+      }
+    }
+    
+    // The frog landed in the water
+    if (currLane.type == LOG && !ok)
+      level.reset(-1);
   }
 
   // Triggered by user key presses, we move in terms of the tile size
@@ -36,7 +85,11 @@ class Frog extends Rectangle {
     y = nexty;
     attach(null); // If it's currently attached to a log, we un-attach it 
     
-    if (dy < 0) level.points += 10; // 10 points if it goes up
+    if (dy < 0) level.incPoints(10); // 10 points if it goes up
+  }
+
+  void show() {
+    image(sprite, x, y, w, h);
   }
   
   boolean onScreen(float xc, float yc) { // Test if a coordinate keeps the frog on the screen.

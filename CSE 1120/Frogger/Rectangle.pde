@@ -5,6 +5,10 @@ class Rectangle {
   float x, y, w, h;
   color col;
 
+  Rectangle(float x, float y, float w, float h) {
+    this(x, y, w, h, color(0, 0, 0, 255));
+  }
+
   // A pretty generic constructor. We use object oriented programming to improve clarity,
   // so "this" simply represents the instance of Rectangle that is being created.
   Rectangle(float x, float y, float w, float h, color col) {

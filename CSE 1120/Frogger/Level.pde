@@ -9,6 +9,8 @@ class Level extends Rectangle {
   int points;
   int startTime, elapsed;
   int deadFrame;
+
+  float alligatorChance = 1;
   
   final int gameTime = 30 * 1000; // 30 seconds
 
@@ -20,24 +22,26 @@ class Level extends Rectangle {
     points = 0;
     reset();
   }
-  
+
   void reset() {
+    reset(0);
+  }
+  
+  void reset(int dLives) {
+    lives += dLives;
     // We create a new frog at the center of the screen, one grid above the bottom, and one grid in sidelength
     frog = new Frog(this, (w - grid) / 2, h - grid, grid);
     startTime = millis();
+
+    generateAlligator();
   }
   
   void update() {
     for (Lane lane : lanes) lane.update(); // We update all of the lanes in the level
-      
-    int laneIndex = int(frog.y / grid); // Dividing by the grid size gives us the number of lanes above the frog, which is the same as the index of the frog's lane.
-    lanes[laneIndex].check(frog); // We check the lane that the frog is in for collisions with the obstacles
     frog.update(); // This just moves the frog if it is attached to a log
     
     elapsed = (gameTime - millis() + startTime) / 1000; // Update the elapsed time
-    
     if (elapsed <= 0) lives -= 1; // If they player has run out of time, they lose a life
-    
     if (lives <= 0) status = DIED; // If the player runs out of lives, we change the status to say that they have recently died
   }
   
@@ -57,6 +61,31 @@ class Level extends Rectangle {
       "\nPoints\n" + points +
       "\nTime\n" + elapsed, x + w, y, width - x - w, h);
   }
+
+  void generateAlligator() {
+    Lane destLane = null;
+    for (Lane lane : lanes)
+      if (lane.type == DESTINATION)
+        destLane = lane; // We're only looking for the destination lane
+
+    ArrayList<Integer> possibleDests = new ArrayList<Integer>(destLane.obstacles.length); // We store the ones that haven't been reached in an ArrayList for dynamic size
+
+    for (int i = 0; i < destLane.obstacles.length; i++) {
+      if (destLane.obstacles[i].status == REACHED) continue; // Ignore the ones that have been reached
+
+      destLane.obstacles[i].status = SAFE; // We reset the colour
+      possibleDests.add(i); // If it has not been reached we add it to the list of possible destinations
+    }
+
+    // We break out if we're not making an alligator
+    if (!(random(1) <= alligatorChance)) return;
+
+    if (possibleDests.size() <= 1) return; // The frog needs SOMEwhere to go
+    int ind = possibleDests.get(int(random(possibleDests.size())));
+    destLane.obstacles[ind].status = HOSTILE;
+  }
+
+  void incPoints(int k) { points += k; }
   
   Lane[] loadLanes(String path) {
     Table data = loadTable(path, "header"); // We load the data from the table

@@ -22,7 +22,7 @@ Interview (10%) Present your program to your teacher and answer questions about 
 // thus increasing the speed of the program.
 
 // If this value is true, it will add all of the extensions into the program
-boolean extension = false;
+boolean extension = true;
 
 // Here I use a ternary operator for brevity
 String dim = extension ? P3D : P2D;
