@@ -5,6 +5,7 @@ class Rectangle {
   float x, y, w, h;
   color col;
 
+  // If no color is passed we just set it to alpha
   Rectangle(float x, float y, float w, float h) {
     this(x, y, w, h, color(0, 0, 0, 255));
   }
