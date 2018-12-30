@@ -1,67 +1,78 @@
+String[] listLevelNames() { // Lists the levels located under data/levels
+  String[] files = new File(sketchPath() + "/data/levels").list(); // by listing the files in the directory,
+  ArrayList<String> ret = new ArrayList<String>(files.length); // (arraylist for dynamic size)
+
+  for (String file : files) {
+    String[] nameAndExt = split(file, "."); // (We get the name and extension by separating the file by the dot)
+    if (nameAndExt[1].equals("csv")) ret.add(nameAndExt[0]); // and checking if it is a csv file
+  }
+
+  return ret.toArray(new String[ret.size()]); // return the file names
+}
+
 // The level itself also has a box, representing the box that the lanes and frog itself remain in.
-public abstract class Level extends Rectangle implements GameState {
+public class Level extends Rectangle implements GameState {
   
-  private Frog frog;
+  protected Frog frog;
   private Lane[] lanes;
   
-  private float tileWidth, tileHeight;
+  private float tileSize;
   private int lives;
   private int points;
-  private int startTime, remainingTime;
-
-  private float xOffset, yOffset;
+  private int startTime, remainingTime, wonTime = -1;
   
-  private final int gameTime = 30 * 1000; // 30 seconds
+  private final int gameTime = 30 * 1000, wonWait = 3 * 1000; // 30 seconds and 1 second respectively
   private final float alligatorChance = 0.5;
 
-  public Level(float x, float y, float w, float h, float tileWidth, float tileHeight, String map) { // We initialize the level like a rectangle,
+  public Level(String map) { // default constructor with just the map
+    this(0, 0, width * 4 / 5, height, map);
+  }
+
+  public Level(float x, float y, float w, float h, String map) { // We initialize the level like a rectangle,
     // except also with the path to the csv file containing the data for the map
     super(x, y, w, h, color(0));
-    this.tileWidth = tileWidth;
-    this.tileHeight = tileHeight;
-    
-    lanes = assets.loadLanes(map);
-    for (Lane lane : lanes) lane.setBounds(this);
-
     lives = 3;
     points = 0;
-    xOffset = 0;
-    yOffset = 0;
+    
+    lanes = assets.loadLanes(map);
+    tileSize = height / lanes.length;
+    for (Lane lane : lanes) lane.setBounds(x, y, w, tileSize);
   }
   
   public void init() { reset(0); }
   
   public void update() {
+    if (wonTime < 0 && allDestsReached()) { // If the player has not yet won, and reaches all the destinations,
+      incPoints(1000); // A thousand points
+      wonTime = millis();
+    }
+    
+    if (wonTime >= 0) {
+      // If it has been *wonTime* milliseconds since the player won, we load the menu state
+      if (millis() - wonTime >= wonWait) loadState(MENUSTATE);
+      return;
+    }
+    
     for (Lane lane : lanes) lane.update(); // We update all of the lanes in the level
     frog.update(); // This just moves the frog if it is attached to a log
-    centerOn(frog);
     
     remainingTime = (gameTime - millis() + startTime) / 1000; // Update the remainingTime
     if (remainingTime <= 0) reset(-1); // If they player has run out of time, they lose a life
   }
   
   public void show() {
-		int firstRow = int(max(0, yOffset / tileHeight));
-		int lastRow = int(min(height, (yOffset + h) / tileHeight + 1));
-    int firstCol = int(max(0, xOffset / tileWidth));
-		int lastCol = int(min(width, (xOffset + w) / tileWidth + 1));
-		
-		for (int r = firstRow; r < min(lastRow, lanes.length); r++) {
-			for (int c = firstCol; c < lastCol; c++) {
-        pushMatrix();
-        // We translate based on the offset and draw the lane
-        translate(c * tileWidth - xOffset, r * tileHeight - yOffset);
-				lanes[r].show();
-        popMatrix();
-      }
+    if (wonTime >= 0) {
+      drawCenteredText("Game over" +
+        "!\nYour Score " + points);
+      return;
     }
-
+		for (Lane lane : lanes) lane.show(); // Displaying the level
     frog.show(); // and the frog
     showInfo(); // and the info
   }
 
   public void handleInput() {
-    getLevel().frog.move(keyCode);
+    if (wonTime < 0) frog.move(keyCode);
   }
 
   private void showInfo() {
@@ -80,26 +91,24 @@ public abstract class Level extends Rectangle implements GameState {
   public void reset(int dLives) {
     lives += dLives;
     if (lives < 0) { // If he dies
-      drawCenteredText("Game over" +
-        "!\nYour Score " + points +
-        "\nPress any key to restart");
-      paused = true;
+      wonTime = millis();
       return; // Don't want to finish resetting when the frog dies
     }
     
     // We create a new frog at the center of the screen, one grid above the bottom, and one grid in sidelength
-    frog = new Frog(this, (w - tileWidth) / 2, h - tileWidth, tileHeight);
+    frog = new Frog(this, (w - tileSize) / 2, h - tileSize, tileSize);
     startTime = millis();
     if (random(1) <= alligatorChance) generateAlligator();
   }
 
   private void generateAlligator() {
-    ArrayList<Integer> possibleDests = new ArrayList<Integer>(getDestLane().obstacles.length); // We store the ones that haven't been reached in an ArrayList for dynamic size
+    int numDests = getDestLane().obstacles.length;
+    ArrayList<Integer> possibleDests = new ArrayList<Integer>(numDests); // We store the ones that haven't been reached in an ArrayList for dynamic size
 
-    for (int i = 0; i < getDestLane().obstacles.length; i++) {
+    for (int i = 0; i < numDests; i++) {
       if (getDestLane().obstacles[i].type == REACHED) continue; // Ignore the ones that have been reached
 
-      getDestLane().obstacles[i].type = DESTINATION;
+      getDestLane().obstacles[i].setType(DESTINATION);
       possibleDests.add(i); // If it has not been reached we add it to the list of possible destinations
     }
 
@@ -127,27 +136,13 @@ public abstract class Level extends Rectangle implements GameState {
   public int getLives() { return lives; }
   public void setLives(int lives) { this.lives = lives; }
   public void incPoints(int k) { points += k; }
-
-  private void checkBounds() {
-    xOffset = constrain(xOffset, 0, w);
-    yOffset = constrain(yOffset, 0, h);
-  }
-
-  private void centerOn(Rectangle r) {
-    xOffset = (r.x + r.w / 2) - w / 2;
-    yOffset = (h - y) / 2;
-  }
   
 }
-
-// ===============
-// LEVELS
-// ===============
 
 public class StartScreen extends Level {
 
   public StartScreen() {
-    super(0, 0, width, height, width * 4 / 5 / 16, height / 11, "levels/startscreen.csv");
+    super(0, 0, width, height, "levels/startscreen.csv");
     setLives(9999);
   }
 
@@ -155,13 +150,13 @@ public class StartScreen extends Level {
     super.update();
     if (random(1) <= 0.1) { // 10% chance of moving the frog
       int d = 0;
-      switch (int(random(4))) {
+      switch (int(random(4))) { // in a random direction
         case 0: d = UP; break;
         case 1: d = DOWN; break;
         case 2: d = LEFT; break;
         case 3: d = RIGHT; break;
       }
-      getLevel().frog.move(d);
+      ((Level) getState()).frog.move(d);
     }
   }
 
@@ -176,21 +171,10 @@ public class StartScreen extends Level {
     text("Press any key to begin", width / 2, height * 2 / 3);
   }
 
-  public void handleInput() { // No matter what key is pressed, we just load level 1
-    // We don't call super.handleInput here
-    loadState(LEVEL1);
+  public void handleInput() { // No matter what key is pressed, we just load level 1,
+    // so we don't call super.handleInput here
+    loadLevel("Level 1");
   }
 
 }
 
-public class Level1 extends Level {
-  public Level1() {
-    super(0, 0, width * 4 / 5, height, width * 4 / 5 / 16, height / 11, "levels/level1.csv");
-  }
-}
-
-public class Level2 extends Level {
-  public Level2() {
-    super(0, 0, width * 4 / 5, height, width * 4 / 5 / 16, height / 11, "levels/level2.csv");
-  }
-}
