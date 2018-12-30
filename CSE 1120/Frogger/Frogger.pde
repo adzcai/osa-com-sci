@@ -4,7 +4,6 @@
 // Also, to follow the retro style, the mouse is not used at all.
 
 Assets assets;
-float defaultAnimationSpeed;
 boolean paused = false;
 
 void setup() {
@@ -13,7 +12,6 @@ void setup() {
   frameRate(60);
   
   assets = new Assets(width, height); // See Assets.pde; loads in images from the data folder
-  defaultAnimationSpeed = frameRate * 10;
   loadState(MENUSTATE);
 }
 

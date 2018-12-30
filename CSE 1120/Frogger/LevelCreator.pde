@@ -38,10 +38,14 @@ public class LevelCreator implements GameState {
     Rectangle rect = new Rectangle(width * 7 / 16, 0, width / 8, tileSize, color(255, 0, 0));
     newLaneButton = new Button(rect, "New lane");
 
-    float colW = newLaneButton.w / NUMLANETYPES;
-    laneTypeSelectors = new Rectangle[NUMLANETYPES];
-    for (int i = 0; i < NUMLANETYPES; i++)
-      laneTypeSelectors[i] = new Rectangle(newLaneButton.x + colW * i, newLaneButton.y, colW, newLaneButton.h, assets.laneColors[i]);
+    float colW = newLaneButton.w / assets.getNumLanes();
+    laneTypeSelectors = new Rectangle[assets.getNumLanes()];
+    
+    int counter = 0;
+    for (String type : assets.laneColors.keySet()) {
+      laneTypeSelectors[counter] = new Rectangle(newLaneButton.x + colW * counter, newLaneButton.y, colW, newLaneButton.h, assets.laneColors.get(type));
+      counter++;
+    }
     
     for (int i = 0; i < laneModifiers.length; i++) {
       assets.defaultFont(height / 8);
@@ -101,11 +105,11 @@ public class LevelCreator implements GameState {
     
     if (keyCode == ENTER || keyCode == RETURN) select();
     else if (key == 'h') showHelp = !showHelp;
-    else if (key == 'n') newLane(SAFETY);
+    else if (key == 'n') newLane("safety");
     else if (key == 'r') level.clearRows();
     else if (key == 's') {
       boolean destLaneExists = false;
-      for (Lane l : lanes) if (l.type == DESTINATION) destLaneExists = true;
+      for (Lane l : lanes) if (l.isType("destination")) destLaneExists = true;
       if (!destLaneExists)
         warningMillis = millis();
       else saving = true;
@@ -120,20 +124,20 @@ public class LevelCreator implements GameState {
     }
   }
 
-  private void newLane(int type) { // If only a type is passed, we init the lane with 1 obstacle with length 1, 2 apart and with a speed of 2
-    newLane(type, 1, 1, 2, 2);
+  private void newLane(String type) { // If only a type is passed, we init the lane with 1 obstacle with length 1, 2 apart and with a speed of 2
+    newLane(type, assets.getDefaultObstacleByLane(type), 1, 1, 2, 2);
   }
 
-  private void newLane(int type, int numObstacles, float len, float spacing, float speed) {
+  private void newLane(String type, String obstacleType, int numObstacles, float len, float spacing, float speed) {
     newLaneButton.y += tileSize;
     for (Rectangle r : laneTypeSelectors) r.y += tileSize;
     
     int index = lanes.size();
-    lanes.add(new Lane(index, type, numObstacles, len, spacing, speed));
+    lanes.add(new Lane(index, type, obstacleType, numObstacles, len, spacing, speed));
     lanes.get(index).setBounds(0, 0, width, tileSize);
     
     TableRow lane = level.addRow();
-    lane.setInt("type", type);
+    lane.setString("type", type);
     lane.setInt("numObstacles", numObstacles);
     lane.setFloat("len", len);
     lane.setFloat("spacing", spacing);
@@ -163,10 +167,6 @@ public class Button extends Rectangle { // Just something that the user can clic
     super.show();
     assets.defaultFont(fontSize);
     text(text, x, y, w, h);
-  }
-  
-  public void onPress() {
-    
   }
   
 }

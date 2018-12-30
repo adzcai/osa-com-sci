@@ -17,7 +17,7 @@ public class Frog extends Rectangle {
     super(x, y, s, s); // The frog is a square
     this.level = level;
 
-    anim = new Animation(defaultAnimationSpeed, assets.getSpritesheet("frog")); // The vertical jumping
+    anim = new Animation(100, assets.getSpritesheet("frog")); // The vertical jumping
     dir = 0;
   }
 
@@ -43,7 +43,7 @@ public class Frog extends Rectangle {
       if (intersects(o)) o.collide(this);
     
     // The frog landed in the water
-    if (getCurrLane().type == STREAM && attached == null) die();
+    if (getCurrLane().isType("river") && attached == null) die();
 
     // We update the jump animation
     if (dir != 0) anim.update();
@@ -81,7 +81,7 @@ public class Frog extends Rectangle {
   private void die() {
     if (dead) return; // Don't want him dying if he's dead
     dead = true;
-    anim = new Animation(defaultAnimationSpeed, assets.death); // Change to the death animation
+    anim = new Animation(defaultAnimationSpeed, assets.getSpritesheet("death")); // Change to the death animation
     anim.play();
   }
 
@@ -98,6 +98,6 @@ public class Frog extends Rectangle {
     return level.lanes[laneIndex];
   }
   
-  public void attach(Obstacle log) { attached = log; }
+  public void attach(Obstacle o) { attached = o; }
   
 }

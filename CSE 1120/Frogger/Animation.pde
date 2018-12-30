@@ -1,3 +1,5 @@
+final int defaultAnimationSpeed = 500;
+
 public class Animation { // self-explanatory
 	
 	private boolean playing = false;

@@ -2,20 +2,22 @@
 public class Lane extends Rectangle {
 
   private int index;
-  private int type; // see Assets.pde
+  private String type;
 
+  private String obstacleType;
   private Obstacle[] obstacles;
   private float obstacleLength;
   private float obstacleSpacing;
   private float obstacleSpeed;
 
   // Besides index, we load in the variables from a csv file (table)
-  public Lane(int index, int type, int numObstacles, float len, float spacing, float speed) {
+  public Lane(int index, String type, String obstacleType, int numObstacles, float len, float spacing, float speed) {
     super(0, 0, 0, 0); // We don't want to initialize anything just yet
     this.index = index;
     this.type = type;
-    col = assets.laneColors[type]; // Color of the lane
-
+    this.obstacleType = obstacleType;
+    col = assets.laneColors.get(type); // Color of the lane
+    
     obstacles = new Obstacle[numObstacles]; // We initialize the array of obstacles
     obstacleLength = len;
     obstacleSpacing = spacing;
@@ -40,7 +42,7 @@ public class Lane extends Rectangle {
 
     // This determines the leftmost x for the obstacles. If it's the destination lane, we want the obstacles
     // to be spaced evenly, else we make it random
-    float offset = type == DESTINATION ? h * obstacleLength / 2 : random(h / 4);
+    float offset = type.equals("destination") ? h * obstacleLength / 2 : random(h / 4);
     
     for (int i = 0; i < obstacles.length; i++)
       // We initialize the obstacles using this lane, the starting x and y, the width
@@ -48,7 +50,12 @@ public class Lane extends Rectangle {
       // the sprite based on the obstacle's type (set as a constant in Frogger.pde), and the speed
       obstacles[i] = new Obstacle(this,
         offset + (h * obstacleSpacing) * i, this.y, h * obstacleLength, h,
-        obstacleSpeed, type); 
+        obstacleSpeed, obstacleType); 
   }
+  
+  public boolean isType(String t) { return type.equals(t); }
+  public int getNumObstacles() { return obstacles.length; }
+  public Obstacle getObstacle(int i) { return obstacles[i]; }
+  public void setObstacleType(int i, String t) { obstacles[i].setType(t); }
   
 }

@@ -107,33 +107,33 @@ public class Level extends Rectangle implements GameState {
   }
 
   private void generateAlligator() {
-    int numDests = getDestLane().obstacles.length;
+    int numDests = getDestLane().getNumObstacles();
     ArrayList<Integer> possibleDests = new ArrayList<Integer>(numDests); // We store the ones that haven't been reached in an ArrayList for dynamic size
 
     for (int i = 0; i < numDests; i++) {
-      if (getDestLane().obstacles[i].type == REACHED) continue; // Ignore the ones that have been reached
+      if (getDestLane().getObstacle(i).isType("reached")) continue; // Ignore the ones that have been reached
 
-      getDestLane().obstacles[i].setType(DESTINATION);
+      getDestLane().setObstacleType(i, "home");
       possibleDests.add(i); // If it has not been reached we add it to the list of possible destinations
     }
 
     if (possibleDests.size() <= 1) return; // The frog needs SOMEwhere to go
     
-    int ind = possibleDests.get(int(random(possibleDests.size()))); // choose a random destination
-    getDestLane().obstacles[ind].setType(ALLIGATOR);
+    int ind = possibleDests.get(int(random(possibleDests.size()))); // choose a random destination (ack lots of end brackets I know)
+    getDestLane().setObstacleType(ind, "alligator");
   }
 
   private boolean allDestsReached() {
     boolean allReached = true;
       // We test each obstacle if it has been reached
       for (Obstacle endPoint : getDestLane().obstacles)
-        allReached = allReached && (endPoint.type == REACHED);
+        allReached = allReached && (endPoint.isType("reached"));
     return allReached;
   }
 
-  public Lane getDestLane() {
+  public Lane getDestLane() { // get this level's destination lane
     for (Lane lane : lanes)
-      if (lane.type == DESTINATION)
+      if (lane.isType("destination"))
         return lane;
     return null;
   }
