@@ -27,11 +27,6 @@ public class Rectangle {
       y >= other.y + other.h ||
       y + h <= other.y);
   }
-
-  public boolean hovered() {
-    return (this.x <= mouseX) && (mouseX <= this.x + w) &&
-      (this.y <= mouseY) && (mouseY <= this.y + h);
-  }
   
   public void show() {
     // Simply fill with the colour and draw the rectangle

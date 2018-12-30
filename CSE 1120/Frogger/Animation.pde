@@ -1,5 +1,3 @@
-// ===== DONE =====
-
 public class Animation { // self-explanatory
 	
 	private boolean playing = false;
@@ -7,31 +5,23 @@ public class Animation { // self-explanatory
 	private int index;
 	private PImage[] frames;
 
-  private float speed; // How often to change the frame, in milliseconds
+  private int speed; // How often to change the frame, in milliseconds
   private int timer;
   private int lastTime; // The last millisecond that the animation was updated
 	
-	public Animation(float speed, PImage[] frames) {
+	public Animation(int speed, PImage[] frames) {
 		this.speed = speed;
 		this.frames = frames;
     index = 0;
     timer = 0;
 	}
 
-	public void play() {
+	public void play() { // Starts/resets the animation
 		index = 0;
 		timer = 0;
-    resume();
-	}
-
-  public void pause() {
-    playing = false;
-  }
-
-  public void resume() {
     lastTime = millis();
     playing = true;
-  }
+	}
 	
 	public void update() {
     if (!playing) return; // We don't want to update if the animation isn't playing
@@ -50,10 +40,13 @@ public class Animation { // self-explanatory
     }
   }
 	
+  // Getting useful information about the animation
   public boolean isPlaying() { return playing; }
-	public int getIndex() { return index; }
-	public PImage getCurrentFrame() { return frames[index]; }
-	public int getLastTime() { return lastTime; }
   public boolean isFinished() { return finished; }
+	public int getIndex() { return index; }
+  public int getNumFrames() { return frames.length; }
+  public int getElapsedFrames() { return speed * index + timer; }
+  public int getDuration() { return frames.length * timer; }
+	public PImage getCurrentFrame() { return frames[index]; }
 
 }

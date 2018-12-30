@@ -1,6 +1,7 @@
 // In the main file, we keep the code simple, declaring a few constants and the current level.
 // I decided to start using access modifiers in other files (private, public, etc.)
-// to make sure that the code is secure
+// to make sure that the code is secure.
+// Also, to follow the retro style, the mouse is not used at all.
 
 Assets assets;
 float defaultAnimationSpeed;
@@ -29,8 +30,6 @@ void keyPressed() {
 }
 
 void drawCenteredText(String str) { // For titles and things
-  fill(255);
-  textAlign(CENTER, CENTER);
-  textFont(assets.arcadeFont, height / 8);
+  assets.defaultFont(height / 8);
   text(str, 0, 0, width, height);
 }

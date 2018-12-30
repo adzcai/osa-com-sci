@@ -17,7 +17,7 @@ public class Frog extends Rectangle {
     super(x, y, s, s); // The frog is a square
     this.level = level;
 
-    anim = new Animation(defaultAnimationSpeed, assets.frog); // The vertical jumping
+    anim = new Animation(defaultAnimationSpeed, assets.getSpritesheet("frog")); // The vertical jumping
     dir = 0;
   }
 
@@ -63,8 +63,7 @@ public class Frog extends Rectangle {
     int dy = dir == UP ? -1 : (dir == DOWN ? 1 : 0);
     
     float nextx = x + dx * level.tileSize;
-    float nexty = y + dy * level.tileSize
-    ;
+    float nexty = y + dy * level.tileSize;
     
     // If the move would cause him to move past the screen, we return out of the function
     if (!onScreen(nextx, nexty)) return;
@@ -76,6 +75,7 @@ public class Frog extends Rectangle {
     attach(null); // If it's currently attached to a log, we un-attach it 
     
     if (dy < 0) level.incPoints(10); // 10 points if it goes up
+    anim.play();
   }
   
   private void die() {

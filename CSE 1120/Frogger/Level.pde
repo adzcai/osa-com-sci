@@ -1,3 +1,10 @@
+void loadLevel(String map) { // Sets the current state to a new level using a map
+  states[currentState] = null; // Unload the current state //<>// //<>//
+  currentState = LEVEL; // Say that we're on a level
+  states[LEVEL] = new Level(map); // Initialize the level
+  getState().init();
+}
+
 String[] listLevelNames() { // Lists the levels located under data/levels
   String[] files = new File(sketchPath() + "/data/levels").list(); // by listing the files in the directory,
   ArrayList<String> ret = new ArrayList<String>(files.length); // (arraylist for dynamic size)
@@ -80,9 +87,7 @@ public class Level extends Rectangle implements GameState {
     rect(x + w, y, width - x - w, h);
 
     // We tell the users about their lives, points, and remaining time
-    fill(255);
-    textAlign(CENTER, CENTER);
-    textFont(assets.arcadeFont, height / 16);
+    assets.defaultFont(height / 16);
     text("Lives\n" + lives +
       "\nPoints\n" + points +
       "\nTime\n" + remainingTime, x + w, y, width - x - w, h);

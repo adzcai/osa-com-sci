@@ -1,22 +1,19 @@
-// ===== DONE =====
-
 // These are constants for the different types of lanes and obstacles, which we put together for clarity
-public static final int NUMLANETYPES = 4, NUMSPRITES = 6,
+// The numbers don't really matter, except that they must be unique
+public static final int NUMLANETYPES = 4, NUMSPRITES = 11,
   SAFETY = 0,
-  ROAD = 1, CAR = 1,
-  STREAM = 2, LOG = 2,
-  DESTINATION = 3, HOME = 3, ALLIGATOR = 4, REACHED = 5;
+  ROAD = 1, CAR = 0, TRUCK = 1, RACECAR1 = 2, RACECAR2 = 3, RACECAR3 = 4,
+  STREAM = 2, TURTLE = 5, ALLIGATOR = 6, LOG = 7, LONGLOG = 8,
+  DESTINATION = 3, HOME = 9, HOMEALLIGATOR = 10, REACHED = 11;
 
-// Stores all the images and assets, etc. loaded from the data folder
+// Stores all the images and Assets, etc. loaded from the data folder
 public class Assets {
 
   public PFont arcadeFont;
   public color[] laneColors;
   
-  public PImage[] sprites;
-  //public PImage[] reached;
-  public PImage[] frog;
-  public PImage[] death;
+  private HashMap<String, PImage> sprites;
+  private HashMap<String, PImage[]> spritesheets;
 
   public Assets(int w, int h) {
     arcadeFont = createFont("arcade.ttf", h / 8); // We load in the arcade font, in the data folder
@@ -30,20 +27,24 @@ public class Assets {
     laneColors[STREAM] = color(0, 0, 255);
     laneColors[DESTINATION] = color(0, 255, 0);
 
-    sprites = new PImage[NUMSPRITES];
-    sprites[0] = new PImage(16, 16);
-    sprites[CAR] = loadImage("sprites/car.png");
-    sprites[LOG] = loadImage("sprites/log.png");
-    sprites[HOME] = new PImage(16, 16); // Just an empty image
-    sprites[ALLIGATOR] = loadImage("sprites/alligator.png");
-    sprites[REACHED] = loadImage("sprites/reached.png").get(0, 0, 16, 16);
+    sprites = new HashMap<String, PImage>();
+    spritesheets = new HashMap<String, PImage[]>();
     
-    //reached = loadSpriteSheet("sprites/reached.png", 16, 16);
-    frog = loadSpriteSheet("sprites/frog.png", 12, 14);
-    death = loadSpriteSheet("sprites/death.png", 16, 16);
+    // We loop through all the files in the sprites folder
+    String[] spriteNames = new File(sketchPath() + "/data/sprites").list();
+    for (String name : spriteNames)
+      // We get the name minus the extension, and load it into sprites
+      sprites.put(name.split(".")[0], loadImage("sprites/" + name));
+    
+    // We can't really do the same for the spritesheets because they aren't all the same size
+    spritesheets.put("snake", loadSpritesheet("sname", 30, 11));
+    spritesheets.put("turtle", loadSpritesheet("turtle", 15, 11));
+    spritesheets.put("reached", loadSpritesheet("reached", 16, 16));
+    spritesheets.put("frog", loadSpritesheet("frog", 12, 14));
+    spritesheets.put("death", loadSpritesheet("death", 16, 16));
   }
 
-  public Lane[] loadLanes(String path) {
+  private Lane[] loadLanes(String path) {
     Table data = loadTable(path, "header"); // We load the data from the table
     if (data == null) return new Lane[0];
 
@@ -63,13 +64,30 @@ public class Assets {
     return lanes;
   }
 
-  public PImage[] loadSpriteSheet(String path, int w, int h) {
-    PImage img = loadImage(path);
+  private PImage[] loadSpritesheet(String path, int w, int h) {
+    PImage img = loadImage("spritesheets/" + path + ".png");
     int numFrames = img.width / w;
     PImage[] ret = new PImage[numFrames]; // Initialize the array to be returned as the result
     for (int i = 0; i < numFrames; i++) // For each of the frames,
       ret[i] = img.get(i * w, 0, w, h); // we crop the corresponding w * h image from the spritesheet
     return ret;
   }
+  
+  public void defaultFont(float size) {
+    textFont(arcadeFont, size);
+    textAlign(CENTER, CENTER);
+    fill(255);
+  }
+  
+  public boolean isSpritesheet(String name) {
+    if (name.equals("turtle") ||
+      name.equals("reached") ||
+      name.equals("frog") ||
+      name.equals("death")) return true;
+    else return false;
+  }
+  
+  public PImage getSprite(String name) { return sprites.get(name); }
+  public PImage[] getSpritesheet(String name) { return spritesheets.get(name); }
 
 }
