@@ -2,7 +2,7 @@
 public class Assets {
 
   public PFont arcadeFont;
-  public HashMap<String, Integer> laneColors;
+  private HashMap<String, Integer> laneColors;
   private HashMap<String, PImage> sprites;
   private HashMap<String, PImage[]> spritesheets;
 
@@ -74,7 +74,8 @@ public class Assets {
   }
   
   public boolean isSpritesheet(String name) {
-    if (name.equals("turtle") ||
+    if (name.equals("snake") ||
+      name.equals("turtle") ||
       name.equals("reached") ||
       name.equals("frog") ||
       name.equals("death")) return true;
@@ -88,6 +89,7 @@ public class Assets {
     else return "snake";
   }
   public int getNumLanes() { return laneColors.size(); }
+  public color getLaneColor(String laneType) { return laneColors.get(laneType); }
   public PImage getSprite(String name) { return sprites.get(name); }
   public PImage[] getSpritesheet(String name) { return spritesheets.get(name); }
 

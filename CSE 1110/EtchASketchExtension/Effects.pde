@@ -45,18 +45,17 @@ void initHotkeys() {
   hotkeys.put("randomHue", new Command('h', "Randomize hue"));
   hotkeys.put("randomSaturation", new Command('s', "Randomize saturation"));
   hotkeys.put("randomBrightness", new Command('b', "Randomize brightness"));
-  hotkeys.get("randomBrightness").enabled = true;
   hotkeys.put("randomSize", new Command('r', "Randomize size"));
   
   // Managing dot size
-  hotkeys.put("incDotSize", new Command(RIGHT, "Increase dot size", false) {
+  hotkeys.put("incDotSize", new Command(RIGHT, "Increase thickness", false) {
     public void onPress() { if (dotSize < borderH * 2) dotSize++; }
     
     public String description() {
       return super.description() + " (" + str(dotSize) + ")";
     }
   });
-  hotkeys.put("decDotSize", new Command(LEFT, "Decrease dot size", false) {
+  hotkeys.put("decDotSize", new Command(LEFT, "Decrease thickness", false) {
     public void onPress() { if (dotSize > 1) dotSize--; }
   });
 }

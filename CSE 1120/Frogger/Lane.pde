@@ -16,7 +16,7 @@ public class Lane extends Rectangle {
     this.index = index;
     this.type = type;
     this.obstacleType = obstacleType;
-    col = assets.laneColors.get(type); // Color of the lane
+    col = assets.getLaneColor(type); // Color of the lane
     
     obstacles = new Obstacle[numObstacles]; // We initialize the array of obstacles
     obstacleLength = len;

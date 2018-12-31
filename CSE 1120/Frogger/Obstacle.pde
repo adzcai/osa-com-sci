@@ -16,9 +16,6 @@ public class Obstacle extends Rectangle {
 
     speed = s;
     setType(type);
-    println("type: "+type);
-    println("img: "+img);
-    println("anim: "+anim);
   }
 
   public void update() {
@@ -35,10 +32,6 @@ public class Obstacle extends Rectangle {
   }
 
   public void show() {
-    println(type);
-    println(assets.isSpritesheet(type));
-    println(anim);
-    println(img);
     image(assets.isSpritesheet(type) ? anim.getCurrentFrame() : img, x, y, w, h);
   }
 
