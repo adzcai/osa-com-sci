@@ -4,18 +4,16 @@ public class Animation { // self-explanatory
 	
 	private boolean playing = false;
   private boolean finished = false;
-	private int index;
+	private int index = 0;
 	private PImage[] frames;
 
   private int speed; // How often to change the frame, in milliseconds
-  private int timer;
+  private int timer = 0;
   private int lastTime; // The last millisecond that the animation was updated
 	
 	public Animation(int speed, PImage[] frames) {
 		this.speed = speed;
 		this.frames = frames;
-    index = 0;
-    timer = 0;
 	}
 
 	public void play() { // Starts/resets the animation

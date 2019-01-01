@@ -44,22 +44,14 @@ public class Rectangle {
 public class Button extends Rectangle { // Just something that the user can click on
 
   private float fontSize;
-  private String text;
+  protected String text;
   
   public Button(Rectangle r, String text) {
     // We set the coords and dimensions of the button to the provided rectangle
     super(r.x, r.y, r.w, r.h, r.col);
     this.text = text;
     // The ratio will be the same no matter what font size it currently is; heightToFit uses it to calculate what font size will make the text fit inside the button
-    float textHeight = textAscent() + textDescent();
-    float fontSizeToHeight = textAscent() / textHeight;
-    float heightToFit = w * textHeight / textWidth("\t" + text); // Spaces for some padding
-    fontSize = heightToFit * fontSizeToHeight; // Since the number we pass to fontSize is the text ascent, we calculate it using its ratio to the total height
-    
-    textFont(assets.arcadeFont, fontSize);
-    textHeight = textAscent() + textDescent();
-    if (textHeight > h) // We need to fit using the height instead
-      fontSize = h * fontSizeToHeight;
+    fontSize = fontSizeToFitText(text);
   }
   
   public void show() {
@@ -68,19 +60,50 @@ public class Button extends Rectangle { // Just something that the user can clic
     text(text, x, y, w, h);
   }
 
+  protected float fontSizeToFitText(String text) { // Gives us the font size required to fit *text* in one line in the rectangle
+    // These ratios will be the same no matter what the current size is, so we don't need to worry about that
+    float textHeight = textAscent() + textDescent();
+    float fontSizeToHeight = textAscent() / textHeight;
+    float heightToFit = w * textHeight / textWidth("\t" + text); // Spaces for some padding
+    float fontSize = heightToFit * fontSizeToHeight; // Since the number we pass to fontSize is the text ascent, we calculate it using its ratio to the total height
+    
+    textFont(assets.arcadeFont, fontSize); // We test it,
+    textHeight = textAscent() + textDescent(); // and if it is too vertically tall,
+    if (textHeight > h) // we need to fit using the height instead
+      fontSize = h * fontSizeToHeight;
+    
+    return fontSize;
+  }
+
   public String getText() { return text; }
   
 }
 
 public class PropButton extends Button {
-  private int intVal;
-  private float floatVal;
 
   public PropButton(Rectangle r, String text) {
     super(r, text);
   }
 
-  public String getValAsString() {
-    return 
+  public void showHover(TableRow tableRow) {
+    super.showHover();
+
+    fill(0, 255, 0, 192); // Draw a green triangle on top
+    triangle(x, y + h / 2, x + w / 2, y, x + w, y + h / 2);
+    fill(255, 0, 0, 192); // and a red triangle pointing down
+    triangle(x, y + h / 2, x + w / 2, y + h, x + w, y + h / 2);
+
+    // We just do a little check for what type of number to get
+    String val = str((text.equals("numObstacles") || text.equals("len")) ? tableRow.getInt(text) : tableRow.getFloat(text));
+    assets.defaultFont(fontSizeToFitText(val));
+    text(val, x, y, w, h);
   }
+
+  private void changeValue(TableRow tr, int dir) {
+    if (text.equals("numObstacles") || text.equals("len"))
+      tr.setInt(text, tr.getInt(text) + dir);
+    else 
+      tr.setFloat(text, tr.getFloat(text) + 0.1 * dir);
+  }
+
 }

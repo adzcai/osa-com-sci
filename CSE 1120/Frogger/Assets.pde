@@ -2,6 +2,7 @@
 public class Assets {
 
   public PFont arcadeFont;
+  public final String[] laneTypes = { "safety", "road", "river", "destination" };
   private HashMap<String, Integer> laneColors;
   private HashMap<String, PImage> sprites;
   private HashMap<String, PImage[]> spritesheets;
