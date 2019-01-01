@@ -1,23 +1,4 @@
-void loadLevel(String map) { // Sets the current state to a new level using a map
-  states[currentState] = null; // Unload the current state //<>// //<>//
-  currentState = LEVEL; // Say that we're on a level
-  states[LEVEL] = new Level(map); // Initialize the level
-  getState().init();
-}
-
-String[] listLevelNames() { // Lists the levels located under data/levels
-  String[] files = new File(sketchPath() + "/data/levels").list(); // by listing the files in the directory,
-  ArrayList<String> ret = new ArrayList<String>(files.length); // (arraylist for dynamic size)
-
-  for (String file : files) {
-    String[] nameAndExt = split(file, "."); // (We get the name and extension by separating the file by the dot)
-    if (nameAndExt[1].equals("csv")) ret.add(nameAndExt[0]); // and checking if it is a csv file
-  }
-
-  return ret.toArray(new String[ret.size()]); // return the file names
-}
-
-// The level itself also has a box, representing the box that the lanes and frog itself remain in.
+// The level itself also has a box, representing the box that the lanes and frog itself remain in
 public class Level extends Rectangle implements GameState {
   
   protected Frog frog;
@@ -28,8 +9,11 @@ public class Level extends Rectangle implements GameState {
   private int points;
   private int startTime, remainingTime, wonTime = -1;
   
-  private final int gameTime = 30 * 1000, wonWait = 3 * 1000; // 30 seconds and 1 second respectively
-  private final float alligatorChance = 0.5;
+  private final int gameTime = 30 * 1000; // The user has 30 seconds to get the frog home
+  private final int wonWait = 3 * 1000; // We show the game over message for one second 
+  private final float alligatorChance = 0.5; // Half chance of spawning an alligator each reset
+
+  // ===== INITIALIZING THE LEVEL =====
 
   public Level(String map) { // default constructor with just the map
     this(0, 0, width * 4 / 5, height, map);
@@ -43,56 +27,12 @@ public class Level extends Rectangle implements GameState {
     
     lanes = assets.loadLanes(map);
     tileSize = height / lanes.length;
-    for (Lane lane : lanes) lane.setBounds(x, y, w, tileSize);
+    for (Lane lane : lanes) lane.init(x, y, w, tileSize);
   }
   
   public void init() { reset(0); }
-  
-  public void update() {
-    if (wonTime < 0 && allDestsReached()) { // If the player has not yet won, and reaches all the destinations,
-      incPoints(1000); // A thousand points
-      wonTime = millis();
-    }
-    
-    if (wonTime >= 0) {
-      // If it has been *wonTime* milliseconds since the player won, we load the menu state
-      if (millis() - wonTime >= wonWait) loadState(MENUSTATE);
-      return;
-    }
-    
-    for (Lane lane : lanes) lane.update(); // We update all of the lanes in the level
-    frog.update(); // This just moves the frog if it is attached to a log
-    
-    remainingTime = (gameTime - millis() + startTime) / 1000; // Update the remainingTime
-    if (remainingTime <= 0) reset(-1); // If they player has run out of time, they lose a life
-  }
-  
-  public void show() {
-    if (wonTime >= 0) {
-      drawCenteredText("Game over" +
-        "!\nYour Score " + points);
-      return;
-    }
-		for (Lane lane : lanes) lane.show(); // Displaying the level
-    frog.show(); // and the frog
-    showInfo(); // and the info
-  }
 
-  public void handleInput() {
-    if (wonTime < 0) frog.move(keyCode);
-  }
-
-  private void showInfo() {
-    fill(0); // We draw a black rectangle filling the remainder of the screen to the right of the level
-    rect(x + w, y, width - x - w, h);
-
-    // We tell the users about their lives, points, and remaining time
-    assets.defaultFont(height / 16);
-    text("Lives\n" + lives +
-      "\nPoints\n" + points +
-      "\nTime\n" + remainingTime, x + w, y, width - x - w, h);
-  }
-
+  // Changes number of lives if passed, creates a new frog and possibly generates an alligator
   public void reset(int dLives) {
     lives += dLives;
     if (lives < 0) { // If he dies
@@ -103,6 +43,7 @@ public class Level extends Rectangle implements GameState {
     // We create a new frog at the center of the screen, one grid above the bottom, and one grid in sidelength
     frog = new Frog(this, (w - tileSize) / 2, h - tileSize, tileSize);
     startTime = millis();
+    // If the probability that an alligator is generated is chosen, we generate one
     if (random(1) <= alligatorChance) generateAlligator();
   }
 
@@ -123,6 +64,57 @@ public class Level extends Rectangle implements GameState {
     getDestLane().setObstacleType(ind, "alligator");
   }
 
+  // ===== DRAWING THE LEVEL =====
+
+  public void show() {
+    if (wonTime >= 0) {
+      assets.drawCenteredText("Game over" +
+        "!\nYour Score " + points);
+      return;
+    }
+		for (Lane lane : lanes) lane.show(); // Displaying the level
+    frog.show(); // and the frog
+    showInfo(); // and the info
+  }
+
+  private void showInfo() {
+    fill(0); // We draw a black rectangle filling the remainder of the screen to the right of the level
+    rect(x + w, y, width - x - w, h);
+
+    // We tell the users about their lives, points, and remaining time
+    assets.defaultFont(height / 16);
+    text("Lives\n" + lives +
+      "\nPoints\n" + points +
+      "\nTime\n" + remainingTime, x + w, y, width - x - w, h);
+  }
+
+  // ===== UPDATING THE LEVEL =====
+  
+  public void update() {
+    if (wonTime < 0 && allDestsReached()) { // If the player has not yet won, and reaches all the destinations,
+      incPoints(1000); // A thousand points
+      wonTime = millis();
+    }
+    
+    if (wonTime >= 0) {
+      // If it has been *wonTime* milliseconds since the player won, we load the menu state
+      if (millis() - wonTime >= wonWait) loadState(MENUSTATE);
+      return;
+    }
+    
+    for (Lane lane : lanes) lane.update(); // We update all of the lanes in the level
+    frog.update(); // This just moves the frog if it is attached to a log
+    
+    remainingTime = (gameTime - millis() + startTime) / 1000; // Update the remainingTime
+    if (remainingTime <= 0) reset(-1); // If they player has run out of time, they lose a life
+  }
+
+  public void handleInput() {
+    if (wonTime < 0) frog.move(keyCode);
+  }
+
+  // ===== GETTERS AND SETTERS =====
+
   private boolean allDestsReached() {
     boolean allReached = true;
       // We test each obstacle if it has been reached
@@ -130,14 +122,12 @@ public class Level extends Rectangle implements GameState {
         allReached = allReached && (endPoint.isType("reached"));
     return allReached;
   }
-
-  public Lane getDestLane() { // get this level's destination lane
+  public Lane getDestLane() { // Get this level's destination lane
     for (Lane lane : lanes)
       if (lane.isType("destination"))
         return lane;
     return null;
   }
-
   public int getLives() { return lives; }
   public void setLives(int lives) { this.lives = lives; }
   public void incPoints(int k) { points += k; }

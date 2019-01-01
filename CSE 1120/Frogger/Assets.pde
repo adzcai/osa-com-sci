@@ -3,34 +3,35 @@ public class Assets {
 
   public PFont arcadeFont;
   public final String[] laneTypes = { "safety", "road", "river", "destination" };
-  private HashMap<String, Integer> laneColors;
-  private HashMap<String, PImage> sprites;
-  private HashMap<String, PImage[]> spritesheets;
+  public final String[] obstacleTypes = { // We put them in lines to correspond to the lane type they are usually on
+    "snake", "frog", "death",
+    "car", "truck", "racecar1", "racecar2", "racecar3",
+    "log", "longlog", "turtle", "alligator",
+    "home", "homealligator", "reached", "ladybug"
+  };
 
+  private HashMap<String, Integer> laneColors = new HashMap<String, Integer>();;
+  private HashMap<String, PImage> sprites = new HashMap<String, PImage>();;
+  private HashMap<String, PImage[]> spritesheets = new HashMap<String, PImage[]>();;
+
+  // ===== LOADING OUTSIDE RESOURCES =====
+  
+  // In the constructor, we load up all the variables above with images from the data folder
   public Assets(int w, int h) {
     arcadeFont = createFont("arcade.ttf", h / 8); // We load in the arcade font, in the data folder
 
-    // We could have initialized these at the beginning,
-    // but doing it in Assets makes it more centralized and clear and allows us to use the constants
-    // we declared earlier
-    laneColors = new HashMap<String, Integer>();
+    // Set the colors for the different lanes
     laneColors.put("safety", color(64, 255, 32));
     laneColors.put("road", color(0));
     laneColors.put("river", color(0, 0, 255));
     laneColors.put("destination", color(0, 255, 0));
 
-    sprites = new HashMap<String, PImage>();
-    spritesheets = new HashMap<String, PImage[]>();
-    
     // We loop through all the files in the sprites folder
-    String[] spriteNames = new File(sketchPath() + "/data/sprites").list();
-    for (String name : spriteNames) {
-      String[] nameAndExt = split(name, ".");;
-      if (nameAndExt.length < 2 || !nameAndExt[1].equals("png")) continue; // If the file is not "x.png"
-      sprites.put(nameAndExt[0], loadImage("sprites/" + name)); // We get the name minus the extension, and load it into sprites
-    }
+    for (String name : obstacleTypes)
+      if (!isSpritesheet(name)) // As long as it doesn't require a spritesheet
+        sprites.put(name, loadImage("sprites/" + name + ".png")); // We load it into sprites
     
-    // We can't really do the same for the spritesheets because they aren't all the same size
+    // We load the spritesheets
     spritesheets.put("snake", loadSpritesheet("snake", 30, 11));
     spritesheets.put("turtle", loadSpritesheet("turtle", 15, 11));
     spritesheets.put("reached", loadSpritesheet("reached", 16, 16));
@@ -67,13 +68,43 @@ public class Assets {
       ret[i] = img.get(i * w, 0, w, h); // we crop the corresponding w * h image from the spritesheet
     return ret;
   }
+
+  public String[] listLevelNames() { // Lists the levels located under data/levels
+    String[] files = new File(sketchPath() + "/data/levels").list(); // by listing the files in the directory,
+    ArrayList<String> ret = new ArrayList<String>(files.length); // (arraylist for dynamic size)
+
+    for (String file : files) {
+      String[] nameAndExt = split(file, "."); // (We get the name and extension by separating the file by the dot)
+      if (nameAndExt[1].equals("csv")) ret.add(nameAndExt[0]); // and checking if it is a csv file
+    }
+
+    return ret.toArray(new String[ret.size()]); // return the file names
+  }
   
+  // ===== UTILITY FUNCTIONS ===== 
+
   public void defaultFont(float size) {
     textFont(arcadeFont, size);
     textAlign(CENTER, CENTER);
     fill(255);
   }
+
+  public void drawCenteredText(String text) { // For titles and things
+    Button b = new Button(new Rectangle(0, 0, width, height, color(0, 0)), text);
+    b.show(); // We simply use the text font-checking already implemented in Button
+  }
+
+  // gets the index of a string in an array of them
+  public int indexOf(String search, String[] arr) {
+    for (int i = 0; i < arr.length; i++)
+      if (arr[i].equals(search))
+        return i;
+    return -1;
+  }
+
+  // ===== GETTERS =====
   
+  // Sees if a particular obstacle type has an associated animation
   public boolean isSpritesheet(String name) {
     if (name.equals("snake") ||
       name.equals("turtle") ||
@@ -83,6 +114,7 @@ public class Assets {
     else return false;
   }
   
+  // Each type of lane has a default associated obstacle
   public String getDefaultObstacleByLane(String laneType) {
     if (laneType.equals("road")) return "car";
     else if (laneType.equals("river")) return "log";

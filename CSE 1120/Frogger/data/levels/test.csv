@@ -1,3 +1,0 @@
-laneType,obstacleType,numObstacles,len,spacing,speed
-destination,home,5,1.0,2.0,0.0
-safety,snake,3.0,1.0,2.0,2.0

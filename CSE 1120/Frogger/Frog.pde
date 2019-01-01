@@ -13,6 +13,8 @@ public class Frog extends Rectangle {
   private Animation anim;
   private int dir; // The direction the frog is jumping, used for the animation
 
+  // ===== INITIALIZING THE FROG =====
+
   public Frog(Level level, float x, float y, float s) {
     super(x, y, s, s); // The frog is a square
     this.level = level;
@@ -21,13 +23,22 @@ public class Frog extends Rectangle {
     dir = 0;
   }
 
+  // ===== DRAWING THE FROG =====
+
+  public void show() {
+    // We show the frog if he's alive, or the death otherwise
+    image(anim.getCurrentFrame(), x, y, w, h);
+  }
+
+  // ===== UPDATING THE FROG =====
+
   public void update() {
     if (dead) {
-      if (animFinishedMillis >= 0 &&
-        (millis() - animFinishedMillis > deathWaitTime)) level.reset(-1);
+      if (animFinishedMillis >= 0 && (millis() - animFinishedMillis > deathWaitTime)) // If *deathWaitTime* milliseconds have passed since the death animation finished
+        level.reset(-1); // We reset the level with a lost life
         
-      anim.update();
-      if (animFinishedMillis < 0 && anim.isFinished()) animFinishedMillis = millis();
+      anim.update(); // Update the death animation
+      if (animFinishedMillis < 0 && anim.isFinished()) animFinishedMillis = millis(); // If the animation just finished, we set *animFinishedMillis* to now
       return;
     }
     
@@ -38,21 +49,24 @@ public class Frog extends Rectangle {
       return; // He's died so we don't update
     }
 
-    // We check for the frog's intersection with the obstacles
-    for (Obstacle o : getCurrLane().obstacles) // We loop through the obstacles in the lane
+    for (Obstacle o : getCurrLane().obstacles) // We check for the frog's intersection with each of the obstacles in the lane
       if (intersects(o)) o.collide(this);
     
-    // The frog landed in the water
+    // If the frog landed in the water and he's not riding anything
     if (getCurrLane().isType("river") && attached == null) die();
 
     // We update the jump animation
     if (dir != 0) anim.update();
   }
-
-  public void show() {
-    // We show the frog if he's alive, or the death otherwise
-    image(anim.getCurrentFrame(), x, y, w, h);
+  
+  private void die() {
+    if (dead) return; // Don't want him dying if he's already dead
+    dead = true;
+    anim = new Animation(defaultAnimationSpeed, assets.getSpritesheet("death")); // Change to the death animation
+    anim.play();
   }
+
+  public void attach(Obstacle o) { attached = o; }
 
   // Triggered by user key presses, we move in terms of the tile size
   public void move(int dir) {
@@ -77,27 +91,19 @@ public class Frog extends Rectangle {
     if (dy < 0) level.incPoints(10); // 10 points if it goes up
     anim.play();
   }
-  
-  private void die() {
-    if (dead) return; // Don't want him dying if he's dead
-    dead = true;
-    anim = new Animation(defaultAnimationSpeed, assets.getSpritesheet("death")); // Change to the death animation
-    anim.play();
-  }
+
+  // ===== TESTERS AND GETTERS =====
 
   private boolean onScreen(float xc, float yc) { // Test if a coordinate keeps the frog on the screen.
     // Essentially, we test that xc is equal to xc when bounded by one pixel within the level, and the same for yc.
     return xc == constrain(xc, level.x - w + 1, level.x + level.w - 1) &&
       yc == constrain(yc, level.y - h + 1, level.y + level.h - 1);
   }
-
   // Dividing by the grid size gives us the number of lanes above the frog,
   // which is the same as the index of the frog's lane.
   private Lane getCurrLane() {
     int laneIndex = int(y / level.tileSize); 
     return level.lanes[laneIndex];
   }
-  
-  public void attach(Obstacle o) { attached = o; }
   
 }

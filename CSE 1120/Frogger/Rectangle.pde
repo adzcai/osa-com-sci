@@ -57,22 +57,14 @@ public class Button extends Rectangle { // Just something that the user can clic
   public void show() {
     super.show();
     assets.defaultFont(fontSize);
-    text(text, x, y, w, h);
+    text(text, x + w / 2, y + h / 2);
   }
 
   protected float fontSizeToFitText(String text) { // Gives us the font size required to fit *text* in one line in the rectangle
-    // These ratios will be the same no matter what the current size is, so we don't need to worry about that
-    float textHeight = textAscent() + textDescent();
-    float fontSizeToHeight = textAscent() / textHeight;
-    float heightToFit = w * textHeight / textWidth("\t" + text); // Spaces for some padding
-    float fontSize = heightToFit * fontSizeToHeight; // Since the number we pass to fontSize is the text ascent, we calculate it using its ratio to the total height
+    float minW = w * textAscent() / textWidth(text); // Spaces for some padding
+    float minH = h * textAscent() / (textAscent() + textDescent());
     
-    textFont(assets.arcadeFont, fontSize); // We test it,
-    textHeight = textAscent() + textDescent(); // and if it is too vertically tall,
-    if (textHeight > h) // we need to fit using the height instead
-      fontSize = h * fontSizeToHeight;
-    
-    return fontSize;
+    return min(minW, minH);
   }
 
   public String getText() { return text; }
@@ -85,7 +77,7 @@ public class PropButton extends Button {
     super(r, text);
   }
 
-  public void showHover(TableRow tableRow) {
+  public void showHover(TableRow tr) {
     super.showHover();
 
     fill(0, 255, 0, 192); // Draw a green triangle on top
@@ -94,16 +86,46 @@ public class PropButton extends Button {
     triangle(x, y + h / 2, x + w / 2, y + h, x + w, y + h / 2);
 
     // We just do a little check for what type of number to get
-    String val = str((text.equals("numObstacles") || text.equals("len")) ? tableRow.getInt(text) : tableRow.getFloat(text));
+    String val = "";
+    switch (text) {
+      case "laneType":
+      case "obstacleType":
+        val = tr.getString(text);
+        break;
+
+      case "numObstacles":
+      case "len":
+        val = str(tr.getInt(text));
+        break;
+
+      case "spacing":
+      case "speed":
+        val = str(tr.getFloat(text));
+    }
+
     assets.defaultFont(fontSizeToFitText(val));
     text(val, x, y, w, h);
   }
 
   private void changeValue(TableRow tr, int dir) {
-    if (text.equals("numObstacles") || text.equals("len"))
-      tr.setInt(text, tr.getInt(text) + dir);
-    else 
-      tr.setFloat(text, tr.getFloat(text) + 0.1 * dir);
+    switch (text) {
+      case "laneType":
+      case "obstacleType":
+        String[] arr = text.equals("laneType") ? assets.laneTypes : assets.obstacleTypes;
+        int index = assets.indexOf(tr.getString(text), arr); // We get the index of the button's current value in the array
+        // We set this button's text to the next value in the array. We need to constrain to prevent it from going out of bounds
+        tr.setString(text, arr[constrain(index + dir, 0, arr.length - 1)]);
+        break;
+
+      case "numObstacles":
+      case "len":
+        tr.setInt(text, tr.getInt(text) + dir);
+        break;
+      case "spacing":
+      case "speed":
+        tr.setFloat(text, tr.getFloat(text) + 0.1 * dir);
+        break;
+    }
   }
 
 }
