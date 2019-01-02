@@ -43,49 +43,42 @@ public class Level extends Rectangle implements GameState {
     // We create a new frog at the center of the screen, one grid above the bottom, and one grid in sidelength
     frog = new Frog(this, (w - tileSize) / 2, h - tileSize, tileSize);
     startTime = millis();
-    // If the probability that an alligator is generated is chosen, we generate one
-    if (random(1) <= alligatorChance) generateAlligator();
-  }
-
-  private void generateAlligator() {
-    int numDests = getDestLane().getNumObstacles();
+    
+    // Resetting the destinations/generating an alligator
+    int numDests = 5;
     ArrayList<Integer> possibleDests = new ArrayList<Integer>(numDests); // We store the ones that haven't been reached in an ArrayList for dynamic size
 
     for (int i = 0; i < numDests; i++) {
-      if (getDestLane().getObstacle(i).isType("reached")) continue; // Ignore the ones that have been reached
+      if (getDestLane().getObstacle(i).isType("reached") || getDestLane().getObstacle(i).isType("ladybug")) continue; // Ignore the ones that have been reached
 
-      getDestLane().setObstacleType(i, "home");
+      getDestLane().setObstacleType(i, "home"); // Set the unreached ones to home
       possibleDests.add(i); // If it has not been reached we add it to the list of possible destinations
     }
-
-    if (possibleDests.size() <= 1) return; // The frog needs SOMEwhere to go
     
-    int ind = possibleDests.get(int(random(possibleDests.size()))); // choose a random destination (ack lots of end brackets I know)
-    getDestLane().setObstacleType(ind, "alligator");
+    // If the probability that an alligator is generated is chosen and there are at least two remaining destinations, we generate one
+    if (random(1) <= alligatorChance && possibleDests.size() > 1) {
+      int ind = possibleDests.get(int(random(possibleDests.size()))); // choose a random destination (ack lots of end brackets I know)
+      getDestLane().setObstacleType(ind, "alligator");
+    }
   }
 
   // ===== DRAWING THE LEVEL =====
 
   public void show() {
+    background(0);
     if (wonTime >= 0) {
-      assets.drawCenteredText("Game over" +
-        "!\nYour Score " + points);
+      new Button(0, 0, width, height / 2, "Game over!").show();
+      new Button(0, height / 2, width, height / 2, "Your Score: " + points).show();
       return;
     }
 		for (Lane lane : lanes) lane.show(); // Displaying the level
     frog.show(); // and the frog
-    showInfo(); // and the info
-  }
-
-  private void showInfo() {
-    fill(0); // We draw a black rectangle filling the remainder of the screen to the right of the level
-    rect(x + w, y, width - x - w, h);
-
+    
     // We tell the users about their lives, points, and remaining time
-    assets.defaultFont(height / 16);
-    text("Lives\n" + lives +
-      "\nPoints\n" + points +
-      "\nTime\n" + remainingTime, x + w, y, width - x - w, h);
+    float spacing = h / 7;
+    new Button(x + w, y + spacing, width - x - w, spacing, "Lives: " + str(lives)).show();
+    new Button(x + w, y + spacing * 3, width - x - w, spacing, "Points: " + str(points)).show();
+    new Button(x + w, y + spacing * 5, width - x - w, spacing, "Time: " + str(remainingTime)).show();
   }
 
   // ===== UPDATING THE LEVEL =====

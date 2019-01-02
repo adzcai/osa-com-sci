@@ -82,7 +82,7 @@ public class Frog extends Rectangle {
     // If the move would cause him to move past the screen, we return out of the function
     if (!onScreen(nextx, nexty)) return;
     
-    // We know that it will remain on the screen now, so we can move it.
+    // We know that it will remain on the screen now, so we can move it
     x = nextx;
     y = nexty;
     this.dir = dir;
@@ -96,7 +96,7 @@ public class Frog extends Rectangle {
 
   private boolean onScreen(float xc, float yc) { // Test if a coordinate keeps the frog on the screen.
     // Essentially, we test that xc is equal to xc when bounded by one pixel within the level, and the same for yc.
-    return xc == constrain(xc, level.x - w + 1, level.x + level.w - 1) &&
+    return xc == constrain(xc, level.x - 1, level.x + level.w - h + 1) &&
       yc == constrain(yc, level.y - h + 1, level.y + level.h - 1);
   }
   // Dividing by the grid size gives us the number of lanes above the frog,

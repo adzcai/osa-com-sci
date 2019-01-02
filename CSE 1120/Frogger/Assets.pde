@@ -17,8 +17,8 @@ public class Assets {
   // ===== LOADING OUTSIDE RESOURCES =====
   
   // In the constructor, we load up all the variables above with images from the data folder
-  public Assets(int w, int h) {
-    arcadeFont = createFont("arcade.ttf", h / 8); // We load in the arcade font, in the data folder
+  public Assets() {
+    arcadeFont = createFont("arcade.ttf", height / 8); // We load in the arcade font, in the data folder
 
     // Set the colors for the different lanes
     laneColors.put("safety", color(64, 255, 32));
@@ -45,18 +45,10 @@ public class Assets {
 
     Lane[] lanes = new Lane[data.getRowCount()]; // We initialize an array of lanes. Each row in the table corresponds to a lane
     
-    int counter = 0;
-    for (TableRow row : data.rows()) { // For each of the rows
+    for (int i = 0; i < data.getRowCount(); i++) // For each of the rows
       // We add the lane specified by the data to the lanes array
-      lanes[counter] = new Lane(counter,
-        row.getString("laneType"),
-        row.getString("obstacleType"),
-        row.getInt("numObstacles"),
-        row.getFloat("len"),
-        row.getFloat("spacing"),
-        row.getFloat("speed"));
-      counter++;
-    }
+      lanes[i] = new Lane(i, data.getRow(i));
+      
     return lanes;
   }
 
@@ -90,8 +82,7 @@ public class Assets {
   }
 
   public void drawCenteredText(String text) { // For titles and things
-    Button b = new Button(new Rectangle(0, 0, width, height, color(0, 0)), text);
-    b.show(); // We simply use the text font-checking already implemented in Button
+    new Button(0, 0, width, height, text).show(); // We simply use the text font-checking already implemented in Button
   }
 
   // gets the index of a string in an array of them

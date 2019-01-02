@@ -7,7 +7,7 @@ public class Obstacle extends Rectangle {
   private PImage img;
   private Animation anim; // This is only for the reached destinations
 
-  // We initialize the obstacle like a rectangle, plus a speed variable
+  // We initialize the obstacle like a rectangle, plus a speed variable and its lane, which we use to calculate its min and max x values
   public Obstacle(Lane lane, float x, float y, float w, float h, float s, String type) {
     super(x, y, w, h);
 
@@ -31,24 +31,29 @@ public class Obstacle extends Rectangle {
       x = maxX; // we reset it to the right of the screen
   }
 
-  public void show() {
+  public void show() { // If this obstacle has an animation, we get its current frame, otherwise it's just its image
     image(assets.isSpritesheet(type) ? anim.getCurrentFrame() : img, x, y, w, h);
   }
 
   public void collide(Frog frog) {
     switch (type) {
+    case "snake":
     case "car":
+    case "truck":
     case "racecar1":
     case "racecar2":
-    case "racecar3": // If the frog hits one of these obstacles, he dies and we reset
+    case "racecar3": 
     case "alligator":
     case "homealligator":
-      frog.die(); break;
+      // If the frog hits one of these obstacles, he dies and we reset
+      frog.die();
+      break;
     
     case "log":
     case "longlog":
-    case "turtle": // He lands on a log, he's ok and we attach to it
-      frog.attach(this); break;
+    case "turtle": // He lands on a log, we attach to it
+      frog.attach(this);
+      break;
     
     case "home": // If he reaches one of the home points (note it hasn't been reached or alligator-ed)
       setType("reached"); // The frog reaches the tile, so we change its type, inc the level's points
@@ -56,18 +61,19 @@ public class Obstacle extends Rectangle {
       break;
     
     case "reached": // We just reset if he reaches a tile that's been reached
-      frog.level.reset(0); break;
+      frog.level.reset(0);
+      break;
     }
   }
 
   public boolean isType(String type) { return this.type.equals(type); }
   public void setType(String type) {
     this.type = type;
-    if (assets.isSpritesheet(type)) {
+    if (assets.isSpritesheet(type)) { // If the new type has an animation, we create one from assets
       int speed = defaultAnimationSpeed;
-      if (isType("home")) speed = 1000; // We don't want the home frogs to look maniacal
+      if (isType("home")) speed = 3 * 1000; // The home frogs open their mouths every 3 seconds
       anim = new Animation(speed, assets.getSpritesheet(type));
-    } else img = assets.getSprite(type);
+    } else img = assets.getSprite(type); // Otherwise we just get the sprite
   }
   
 }

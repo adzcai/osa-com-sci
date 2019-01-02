@@ -45,22 +45,21 @@ public class LevelCreator implements GameState {
     int counter = 0;
     for (String type : assets.laneTypes) {
       if (type.equals("destination")) continue; // We don't want to show a destination button
-      Rectangle r = new Rectangle(w * counter, 0, w, tileSize, assets.getLaneColor(type));
-      laneTypeSelectors[counter] = new Button(r, type);
+      laneTypeSelectors[counter] = new Button(w * counter, 0, w, tileSize, assets.getLaneColor(type), type);
       counter++;
     }
   }
   
   private void initLanePropButtons() {
     float w = width / cols.length;
-    for (int i = 0; i < cols.length; i++) // The buttons that allow the user to change a lane's properties
-      laneProps[i] = new PropButton(new Rectangle(i * w, 0, w, tileSize, color(0, 128)), cols[i]);
+    for (int i = 0; i < cols.length; i++) // Initialize the buttons that allow the user to change a lane's properties
+      laneProps[i] = new PropButton(i * w, 0, w, tileSize, color(0, 128), cols[i]);
   }
   
   private void initSettingButtons() {
     float colW = width / settings.length;
     for (int i = 0; i < settingStrs.length; i++) // Initialize the setting buttons, at the bottom
-      settings[i] = new Button(new Rectangle(i * colW, 0,colW, tileSize, color(255, 0, 0)), settingStrs[i]);
+      settings[i] = new Button(i * colW, 0,colW, tileSize, color(255, 0, 0), settingStrs[i]);
   }
 
   // ===== DRAWING THE LEVEL CREATOR =====

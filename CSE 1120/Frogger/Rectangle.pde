@@ -43,27 +43,28 @@ public class Rectangle {
 
 public class Button extends Rectangle { // Just something that the user can click on
 
-  private float fontSize;
   protected String text;
   
-  public Button(Rectangle r, String text) {
+  public Button(float x, float y, float w, float h, String text) { // Same as above, if no color is passed we default to alpha
+    this(x, y, w, h, color(0, 255), text);
+  }
+
+  public Button(float x, float y, float w, float h, color col, String text) {
     // We set the coords and dimensions of the button to the provided rectangle
-    super(r.x, r.y, r.w, r.h, r.col);
+    super(x, y, w, h, col);
     this.text = text;
-    // The ratio will be the same no matter what font size it currently is; heightToFit uses it to calculate what font size will make the text fit inside the button
-    fontSize = fontSizeToFitText(text);
   }
   
   public void show() {
     super.show();
-    assets.defaultFont(fontSize);
+    assets.defaultFont(fontSizeToFitText(text));
     text(text, x + w / 2, y + h / 2);
   }
 
   protected float fontSizeToFitText(String text) { // Gives us the font size required to fit *text* in one line in the rectangle
-    float minW = w * textAscent() / textWidth(text); // Spaces for some padding
-    float minH = h * textAscent() / (textAscent() + textDescent());
-    
+    float ascentToTotal = textAscent() / (textAscent() + textDescent());
+    float minW = w * textAscent() / textWidth("  " + text); // A space on either side for padding
+    float minH = (h * 7 / 8) * ascentToTotal;
     return min(minW, minH);
   }
 
@@ -71,10 +72,11 @@ public class Button extends Rectangle { // Just something that the user can clic
   
 }
 
+// A subclass of button that manages a specific property of a lane
 public class PropButton extends Button {
 
-  public PropButton(Rectangle r, String text) {
-    super(r, text);
+  public PropButton(float x, float y, float w, float h, color col, String text) {
+    super(x, y, w, h, col, text);
   }
 
   public void showHover(TableRow tr) {

@@ -35,7 +35,7 @@ public class Lane extends Rectangle {
 
     // This determines the leftmost x for the obstacles. If it's the destination lane, we want the obstacles
     // to be spaced evenly, else we make it random
-    float offset = type.equals("destination") ? w / 11 : random(h / 4);
+    float offset = type.equals("destination") ? w / 11 : h * obstacleLength;
     
     if (type.equals("destination")) // The "obstacles" in the destination lanes are the home, there's always 5 of them spaced evenly apart at the top of the level
       for (int i = 0; i < obstacles.length; i++)

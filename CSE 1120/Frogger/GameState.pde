@@ -14,7 +14,7 @@ public interface GameState { // An interface used to represent the unique states
   public void handleInput();
 }
 
-void loadState(int state) { // Load a state
+void loadState(int state) { // Loads a state
   states[currentState] = null; // Unload the current state
   currentState = state; // and change to the new one
   switch (state) {

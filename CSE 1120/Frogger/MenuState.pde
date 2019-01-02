@@ -1,23 +1,22 @@
 public class MenuState implements GameState { // The main menu
 
-  private int selection = 0;
+  private int selection = 0; // The index of the choice being hovered
+  private Button title, subtitle;
   private Button[] choices;
-  Button title, subtitle;
   private float border;
 
   public void init() {
-    String[] levelNames = assets.listLevelNames();
+    String[] levelNames = assets.listLevelNames(); // A list of all the levels
     choices = new Button[levelNames.length + 1];
     border = height / (choices.length + 6);
     
-    assets.defaultFont(border * textAscent() / (textAscent() + textDescent())); // This ensures that the total text height is equal to the border
-    
-    title = new Button(new Rectangle(0, border, width, border * 2), "Frogger");
-    subtitle = new Button(new Rectangle(0, border * 3, width, border), "by Alexander Cai");
+    // Initializing the different labels and buttons
+    title = new Button(0, border, width, border * 2, "Frogger");
+    subtitle = new Button(0, border * 3, width, border, "by Alexander Cai");
     for (int i = 0; i < levelNames.length; i++)
-      choices[i] = new Button(new Rectangle(0, border * (5 + i), width, border), levelNames[i]);
+      choices[i] = new Button(0, border * (5 + i), width, border, levelNames[i]);
     
-    choices[levelNames.length] = new Button(new Rectangle(0, border * (5 + levelNames.length), width, border), "Level Creator");
+    choices[levelNames.length] = new Button(0, border * (5 + levelNames.length), width, border, "Level Creator");
   }
 
   public void show() {
@@ -31,12 +30,24 @@ public class MenuState implements GameState { // The main menu
   public void update() {} // Everything we need to do is handled below
 
   public void handleInput() {
-    if ((keyCode == RIGHT || keyCode == DOWN) && selection < choices.length - 1) selection++;
-    if ((keyCode == LEFT || keyCode == UP) && selection > 0) selection--;
-    if (keyCode == RETURN || keyCode == ENTER) {
-      if (choices[selection].getText().equals("Level Creator")) loadState(LEVELCREATOR);
-      else loadLevel("levels/" + choices[selection] + ".csv");
+    switch (keyCode) {
+      case RIGHT:
+      case DOWN:
+        selection++;
+        break;
+
+      case LEFT:
+      case UP:
+        selection--;
+        break;
+
+      case RETURN:
+      case ENTER:
+        if (choices[selection].getText().equals("Level Creator")) loadState(LEVELCREATOR);
+        else loadLevel("levels/" + choices[selection].getText() + ".csv");
     }
+
+    selection = constrain(selection, 0, choices.length - 1); // A valid button must be selected
   }
   
 }
