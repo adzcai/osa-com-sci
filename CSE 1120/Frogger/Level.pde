@@ -4,6 +4,8 @@ public class Level extends Rectangle implements GameState {
   protected Frog frog;
   private Lane[] lanes;
   
+  private TextBox livesTextBox, pointsTextBox, timeTextBox, gameOver;
+  
   private float tileSize;
   private int lives;
   private int points;
@@ -28,6 +30,12 @@ public class Level extends Rectangle implements GameState {
     lanes = assets.loadLanes(map);
     tileSize = height / lanes.length;
     for (Lane lane : lanes) lane.init(x, y, w, tileSize);
+    
+    float spacing = h / 7;
+    livesTextBox = new TextBox(x + w, y + spacing, width - x - w, spacing, "Lives: " + lives);
+    pointsTextBox = new TextBox(x + w, y + spacing * 3, width - x - w, spacing, "Points: " + points);
+    timeTextBox = new TextBox(x + w, y + spacing * 5, width - x - w, spacing, "Time: " + gameTime);
+    gameOver = new TextBox(0, 0, width, height / 2, "Game over!");
   }
   
   public void init() { reset(0); }
@@ -35,7 +43,9 @@ public class Level extends Rectangle implements GameState {
   // Changes number of lives if passed, creates a new frog and possibly generates an alligator
   public void reset(int dLives) {
     lives += dLives;
-    if (lives < 0) { // If he dies
+    livesTextBox.setText("Lives: " + lives);
+
+    if (lives <= 0) { // If he dies
       wonTime = millis();
       return; // Don't want to finish resetting when the frog dies
     }
@@ -67,18 +77,18 @@ public class Level extends Rectangle implements GameState {
   public void show() {
     background(0);
     if (wonTime >= 0) {
-      new Button(0, 0, width, height / 2, "Game over!").show();
-      new Button(0, height / 2, width, height / 2, "Your Score: " + points).show();
+      gameOver.show();
+      new TextBox(0, height / 2, width, height / 2, "Your Score: " + points).show();
       return;
     }
 		for (Lane lane : lanes) lane.show(); // Displaying the level
     frog.show(); // and the frog
     
     // We tell the users about their lives, points, and remaining time
-    float spacing = h / 7;
-    new Button(x + w, y + spacing, width - x - w, spacing, "Lives: " + str(lives)).show();
-    new Button(x + w, y + spacing * 3, width - x - w, spacing, "Points: " + str(points)).show();
-    new Button(x + w, y + spacing * 5, width - x - w, spacing, "Time: " + str(remainingTime)).show();
+    
+    livesTextBox.show();
+    pointsTextBox.show();
+    timeTextBox.show();
   }
 
   // ===== UPDATING THE LEVEL =====
@@ -100,6 +110,10 @@ public class Level extends Rectangle implements GameState {
     
     remainingTime = (gameTime - millis() + startTime) / 1000; // Update the remainingTime
     if (remainingTime <= 0) reset(-1); // If they player has run out of time, they lose a life
+
+    // Update the status boxes
+    pointsTextBox.setText("Points: " + points);
+    timeTextBox.setText("Time: " + remainingTime);
   }
 
   public void handleInput() {

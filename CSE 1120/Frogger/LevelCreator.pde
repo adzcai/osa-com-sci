@@ -3,10 +3,10 @@ public class LevelCreator implements GameState {
 
   // Buttons and things
   private String[] cols = { "laneType", "obstacleType", "numObstacles", "len", "spacing", "speed" };
-  private PropButton[] laneProps = new PropButton[cols.length];
+  private PropTextBox[] laneProps = new PropTextBox[cols.length];
   private String[] settingStrs = { "new lane", "reload lanes", "save" };
-  private Button[] settings = new Button[settingStrs.length];
-  private Button[] laneTypeSelectors; // These are the buttons to choose from when selecting a new lane
+  private TextBox[] settings = new TextBox[settingStrs.length];
+  private TextBox[] laneTypeSelectors; // These are the buttons to choose from when selecting a new lane
 
   // Variables to manage selection
   private int depth = 0;
@@ -34,32 +34,32 @@ public class LevelCreator implements GameState {
     for (String col : cols) level.addColumn(col); // Create the table to store the data, with the proper columns
     tileSize = height / numLanes; // The default height for a lane
     initLaneTypeSelectors();
-    initLanePropButtons();
-    initSettingButtons();
+    initLanePropBUTTONS();
+    initSettingBUTTONS();
     newLane("destination", "home", 5, 1, 2, 0); // add the destination lane, since each level needs one
   }
   
   private void initLaneTypeSelectors() {
-    laneTypeSelectors = new Button[assets.getNumLanes() - 1]; // Initialize the array; -1 because we can't choose the destination lane
+    laneTypeSelectors = new TextBox[assets.getNumLanes() - 1]; // Initialize the array; -1 because we can't choose the destination lane
     float w = width / settings.length / (assets.getNumLanes() - 1); // We divide up one of the buttons into the lanes
     int counter = 0;
     for (String type : assets.laneTypes) {
       if (type.equals("destination")) continue; // We don't want to show a destination button
-      laneTypeSelectors[counter] = new Button(w * counter, 0, w, tileSize, assets.getLaneColor(type), type);
+      laneTypeSelectors[counter] = new TextBox(w * counter, 0, w, tileSize, assets.getLaneColor(type), type);
       counter++;
     }
   }
   
-  private void initLanePropButtons() {
+  private void initLanePropBUTTONS() {
     float w = width / cols.length;
     for (int i = 0; i < cols.length; i++) // Initialize the buttons that allow the user to change a lane's properties
-      laneProps[i] = new PropButton(i * w, 0, w, tileSize, color(0, 128), cols[i]);
+      laneProps[i] = new PropTextBox(i * w, 0, w, tileSize, color(0, 128), cols[i]);
   }
   
-  private void initSettingButtons() {
+  private void initSettingBUTTONS() {
     float colW = width / settings.length;
     for (int i = 0; i < settingStrs.length; i++) // Initialize the setting buttons, at the bottom
-      settings[i] = new Button(i * colW, 0,colW, tileSize, color(255, 0, 0), settingStrs[i]);
+      settings[i] = new TextBox(i * colW, 0,colW, tileSize, color(255, 0, 0), settingStrs[i]);
   }
 
   // ===== DRAWING THE LEVEL CREATOR =====
@@ -67,12 +67,6 @@ public class LevelCreator implements GameState {
   // We return out to show that each case is essentially a separate block
   public void show() {
     background(0); // clear the screen
-    
-    if (warningMillis > 0) {
-      assets.drawCenteredText(warning);
-      if (millis() - warningMillis >= warningDuration) // if enough time has passed since we started displaying the warning
-        warningMillis = -1; // we stop showing it
-    }
 
     if (saving) { // If the player is typing in their level name
       String prompt = "What would you like to call your level?";
@@ -83,36 +77,40 @@ public class LevelCreator implements GameState {
     }
     
     for (Lane l : lanes) l.show(); // Draw the lanes
-    for (Button b : settings) b.show(); // Draw the setting buttons
-    
+    for (TextBox b : settings) b.show(); // Draw the setting buttons
       
-    switch (depth) {
+    switch (depth) { // change the selection
     case LANES:
-      Lane selectedLane = (Lane) getSelection();
-      if (selectedLane == null) // If the settings are hovered,
-        for (Button b : settings) b.showHover(); // we highlight them
+      if (settingsSelected()) // If the settings are hovered,
+        for (TextBox b : settings) b.showHover(); // we highlight them
       else
-        selectedLane.showHover(); // Otherwise we highlight the hovered lane
+        ((Lane) getSelection()).showHover(); // Otherwise we highlight the hovered lane
       break;
       
     case BUTTONS:
-      showButtons();
-      ((Button) getSelection()).showHover();
+      showBUTTONS();
+      ((TextBox) getSelection()).showHover();
       break;
       
     case SUBBUTTONS:
-      showButtons();
+      showBUTTONS();
       if (settingsSelected()) {
-        for (Button l : laneTypeSelectors) l.show();
-        ((Button) getSelection()).showHover();
+        for (TextBox l : laneTypeSelectors) l.show();
+        ((TextBox) getSelection()).showHover();
       } else
-        ((PropButton) getSelection()).showHover(level.getRow(selection[LANES]));
+        ((PropTextBox) getSelection()).showHover(level.getRow(selection[LANES]));
       break;
+    }
+
+    if (warningMillis > 0) { // If a warning is being shown
+      assets.drawCenteredText(warning); // We do, and
+      if (millis() - warningMillis >= warningDuration) // if enough time has passed since we started displaying the warning
+        warningMillis = -1; // we stop showing it
     }
   }
 
-  private void showButtons() {
-    for (int i = 0; i < numButtons(); i++) // If the settings are selected, we show the settings, otherwise the lane properties
+  private void showBUTTONS() {
+    for (int i = 0; i < numBUTTONS(); i++) // If the settings are selected, we show the settings, otherwise the lane properties
       (settingsSelected() ? settings : laneProps)[i].show();
   }
 
@@ -120,9 +118,9 @@ public class LevelCreator implements GameState {
 
   public void update() { // We update the locations of the rectangles so that they're where they're supposed to be, even if they aren't shown
     for (Lane l : lanes) l.update(); // Update the lanes
-    for (PropButton b : laneProps) b.y = selection[LANES] * tileSize;
-    for (Button b : settings) b.y = lanes.size() * tileSize;
-    for (Button b : laneTypeSelectors) b.y = lanes.size() * tileSize;
+    for (PropTextBox b : laneProps) b.y = selection[LANES] * tileSize;
+    for (TextBox b : settings) b.y = lanes.size() * tileSize;
+    for (TextBox b : laneTypeSelectors) b.y = lanes.size() * tileSize;
   }
 
   // ===== USER INPUT =====
@@ -139,9 +137,10 @@ public class LevelCreator implements GameState {
     case DOWN:
       dir = keyCode == UP ? -1 : 1; // 1 going up, -1 going down
       if (depth == SUBBUTTONS && !settingsSelected()) // If a lane property is selected
-        // We change the property of the lane; 1 going up, -1 going down
-        // We need to reverse it from dir, which determines the way the selection moves
-        ((PropButton) getSelection()).changeValue(level.getRow(selection[LANES]), -dir);
+        if (destLaneSelected())
+          warnUser("You can't edit the destination lane");
+        else // Note we switch the dir: up should mean +1
+          ((PropTextBox) getSelection()).changeValue(level.getRow(selection[LANES]), -dir);
       else // Otherwise we move up and down the lanes
         moveSelection(LANES, dir);
       break;
@@ -161,10 +160,10 @@ public class LevelCreator implements GameState {
         if (!settingsSelected()) // If we are currently editing a setting and press enter, we go back a depth level
           depth--;
         else // The new lane button is the only setting button with sub-buttons,
-          newLane(((Button) getSelection()).getText()); // so we create a new lane with the type specified by the text of the selected sub-button
+          newLane(((TextBox) getSelection()).getText()); // so we create a new lane with the type specified by the text of the selected sub-button
       }
       
-      else if (depth == BUTTONS && ((Button) getSelection()).getText().equals("reload lanes")) { // If the user clicks the reload lanes button
+      else if (depth == BUTTONS && ((TextBox) getSelection()).getText().equals("reload lanes")) { // If the user clicks the reload lanes button
         for (int i = 0; i < level.getRowCount(); i++) { // For each row in the table,
           TableRow tr = level.getRow(i);
           lanes.set(i, new Lane(i, tr)); // we create a new lane with the data from that row
@@ -172,7 +171,7 @@ public class LevelCreator implements GameState {
         }
       }
       
-      else if (depth == BUTTONS && ((Button) getSelection()).getText().equals("save")) { // If the user clicks the save button
+      else if (depth == BUTTONS && ((TextBox) getSelection()).getText().equals("save")) { // If the user clicks the save button
         if (level.getRowCount() < 8)
           warnUser("There must be at least 8 lanes");
         // The last lane in the level has to be a safety lane
@@ -180,9 +179,6 @@ public class LevelCreator implements GameState {
           warnUser("The spawn lane must be safe");
         else saving = true;
       }
-      
-      else if (depth == LANES && !settingsSelected() && ((Lane) getSelection()).isType("destination")) // We can't edit the destination lane
-        warnUser("You can't edit the destination lane");
         
       else
         depth++; // We go in a depth level
@@ -191,7 +187,7 @@ public class LevelCreator implements GameState {
     case BACKSPACE:
     case DELETE:
       if (depth == LANES) {
-        if (((Lane) getSelection()).isType("destination")) // Can't delete the testination lane; if it is tried, we go back to the menu
+        if (destLaneSelected()) // Can't delete the testination lane; if it is tried, we go back to the menu
           loadState(MENUSTATE);
         else if (!settingsSelected())
           lanes.remove(selection[LANES]); // A normal lane is selected, so we can delete it
@@ -233,7 +229,7 @@ public class LevelCreator implements GameState {
     
     // Makes sure something valid is selected
     selection[LANES] = constrain(selection[LANES], 0, lanes.size());
-    selection[BUTTONS] = constrain(selection[BUTTONS], 0, numButtons() - 1);
+    selection[BUTTONS] = constrain(selection[BUTTONS], 0, numBUTTONS() - 1);
     selection[SUBBUTTONS] = constrain(selection[SUBBUTTONS], 0, assets.laneTypes.length - 2);
   }
 
@@ -268,7 +264,10 @@ public class LevelCreator implements GameState {
   private boolean settingsSelected() {
     return selection[LANES] == lanes.size();
   }
-  private int numButtons() {
+  private boolean destLaneSelected() {
+    return lanes.get(selection[LANES]).isType("destination");
+  }
+  private int numBUTTONS() {
     return settingsSelected() ? settings.length : cols.length;
   }
   // Here we use a that can return any object, depending on the current depth
@@ -285,7 +284,7 @@ public class LevelCreator implements GameState {
       else
         return laneProps[selection[BUTTONS]];
     case SUBBUTTONS: 
-      if (settingsSelected() && selection[BUTTONS] == 0) // The new lane button is selected
+      if (settingsSelected() && selection[BUTTONS] == 0) // The new lane TextBox is selected
         return laneTypeSelectors[selection[SUBBUTTONS]];
       else
         return laneProps[selection[BUTTONS]];

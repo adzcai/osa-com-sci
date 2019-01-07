@@ -1,21 +1,56 @@
 // This class stores information about a solid board
 class Board {
   // Keep track of the board's coordinates and dimensions
-  // We store the position in a vector for easier physics manipulation
+  // We store the position in a vector for easier physics manipulation.
+  // The vector represents the leftmost, topmost point, midway through the depth of the box.
   PVector pos;
-  float w, h;
+  float w, h, d;
+  PShape obj, result;
   
   // Initialize it the same way we would a rect
-  Board(float x_, float y_, float w_, float h_) {
-    pos = new PVector(x_, y_);
+  Board(float x, float y, float z, float w_, float h_, float d_) {
+    pos = new PVector(x, y, z);
     w = w_;
     h = h_;
+    d = d_;
+    
+    result = createShape(GROUP); // Create a group shape that we add...
+    obj = createShape(); // The main loop
+    PShape face1 = createShape(); // and the two faces to
+    PShape face2 = createShape();
+    
+    float r = sqrt(pow(w/2, 2) + pow(d / 2, 2));
+    float theta = PI / 2; // The angle that we rotate for each vertex
+    
+    obj.beginShape(TRIANGLE_STRIP);
+    face1.beginShape();
+    face2.beginShape();
+    
+    for (int i = 0; i < 4; i++) { // We draw each side by converting (theta, r) to Cartesian coordinates
+      obj.vertex(r * cos(i * theta), 0, r * sin(i * theta));
+      face1.vertex(r * cos(i * theta), 0, r * sin(i * theta));
+      obj.vertex(r * cos(i * theta), h, r * sin(i * theta));
+      face2.vertex(r * cos(i * theta), h, r * sin(i * theta));
+    }
+    
+    // We connect it back to the beginning
+    obj.vertex(r, 0, 0);
+    obj.vertex(r, h, 0); 
+    
+    obj.endShape(CLOSE);
+    face1.endShape(CLOSE);
+    face2.endShape(CLOSE);
+    
+    result.addChild(obj);
+    result.addChild(face1);
+    result.addChild(face2);
   }
   
   // We simply draw a white rectangle wherever the board is
   void show() {
     fill(WHITE);
     rect(pos.x, pos.y, w, h);
+    shape(result);
   }
   
   // A simple check to see if (x, y) is within this rectangle's boundaries
@@ -35,7 +70,7 @@ class Paddle extends Board {
   // We don't need to accept any parameters, since we always want to start with the paddle
   // at the left of the screen and centered vertically
   Paddle() {
-    super(0, height * 7 / 16, width / 64, height / 6);
+    super(0, height / 2 - height / 12, 0, width / 64, height / 6, height / 6);
     vel = new PVector(0, height / 64);
   }
   

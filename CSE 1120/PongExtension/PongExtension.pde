@@ -54,7 +54,7 @@ color GREEN = color(0, 0, 255);
 
 // At the start, we simply set up the game and initialize variables
 void setup() {
-  size(640, 480, P2D);
+  size(640, 480, P3D);
   frameRate(60);
   
   imageMode(CENTER);
@@ -66,7 +66,7 @@ void setup() {
   
   // We extend the wall past the top and bottom of the screen so that the ball cannot escape through the corners
   // and initialize the objects we will use in the game
-  wall = new Board(width * 63 / 64, -height / 4, width / 64, height * 5 / 4);
+  wall = new Board(width * 63 / 64, -height / 4, 0, width / 64, height * 3 / 2, height * 3 / 2);
   paddle = new Paddle();
   ball = new Ball();
   
@@ -88,6 +88,9 @@ void setup() {
 }
 
 void draw() {
+  float z = sqrt(pow(width / 2, 2) - pow(mouseX - width / 2, 2));
+  camera(mouseX, mouseY, z, width/2, height/2, 0, 0, 1, 0);
+    
   if (paused) {
     showMenu();
   } else {
@@ -110,15 +113,11 @@ void keyPressed() {
   if (key == ' ') paused = !paused;
   
   if (paused && key == CODED) {
-    switch (keyCode) {
+    if (keyCode == UP && selection > 0)
       // If the user presses the up button, we move the selection up, and vice versa
-      case UP:
-        if (selection > 0) selection--;
-        break;
-      case DOWN:
-        if (selection < effects.size() - 1) selection++;
-        break;
-    }
+        selection--;
+    if (keyCode == DOWN && selection < effects.size() - 1)
+        selection++;
   } else if (key == ENTER || key == RETURN) {
     // We toggle the selected effect
     effects.get(selection).enabled = !effects.get(selection).enabled;

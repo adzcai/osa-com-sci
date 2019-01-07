@@ -82,7 +82,7 @@ public class Assets {
   }
 
   public void drawCenteredText(String text) { // For titles and things
-    new Button(0, 0, width, height, text).show(); // We simply use the text font-checking already implemented in Button
+    new TextBox(0, 0, width, height, text).show(); // We simply use the text font-checking already implemented in TextBox
   }
 
   // gets the index of a string in an array of them

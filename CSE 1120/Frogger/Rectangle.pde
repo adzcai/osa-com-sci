@@ -41,23 +41,25 @@ public class Rectangle {
   
 }
 
-public class Button extends Rectangle { // Just something that the user can click on
+public class TextBox extends Rectangle { // Just something that the user can click on
 
   protected String text;
+  private float fontSize;
   
-  public Button(float x, float y, float w, float h, String text) { // Same as above, if no color is passed we default to alpha
+  public TextBox(float x, float y, float w, float h, String text) { // Same as above, if no color is passed we default to alpha
     this(x, y, w, h, color(0, 255), text);
   }
 
-  public Button(float x, float y, float w, float h, color col, String text) {
+  public TextBox(float x, float y, float w, float h, color col, String text) {
     // We set the coords and dimensions of the button to the provided rectangle
     super(x, y, w, h, col);
     this.text = text;
+    fontSize = fontSizeToFitText(text);
   }
   
   public void show() {
     super.show();
-    assets.defaultFont(fontSizeToFitText(text));
+    assets.defaultFont(fontSize);
     text(text, x + w / 2, y + h / 2);
   }
 
@@ -69,13 +71,17 @@ public class Button extends Rectangle { // Just something that the user can clic
   }
 
   public String getText() { return text; }
+  public void setText(String text) {
+    this.text = text;
+    fontSize = fontSizeToFitText(text);
+  }
   
 }
 
 // A subclass of button that manages a specific property of a lane
-public class PropButton extends Button {
+public class PropTextBox extends TextBox {
 
-  public PropButton(float x, float y, float w, float h, color col, String text) {
+  public PropTextBox(float x, float y, float w, float h, color col, String text) {
     super(x, y, w, h, col, text);
   }
 
