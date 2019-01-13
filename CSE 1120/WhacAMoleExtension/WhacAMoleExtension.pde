@@ -43,7 +43,7 @@ PShape gameBox;
 
 // Variables to track the state of the game
 int points = 0; // 1 minute =  60 seconds = 60 * 1000 milliseconds
-final int playTime = 60 * 1000;
+final int playTime = 20 * 1000;
 int resetMillis = 0;
 int remainingSeconds = 0;
 int millisBeginPause = 0;

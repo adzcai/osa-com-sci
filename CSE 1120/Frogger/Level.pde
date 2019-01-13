@@ -11,9 +11,10 @@ public class Level extends Rectangle implements GameState {
   private int points;
   private int startTime, remainingTime, wonTime = -1;
   
-  private final int gameTime = 30 * 1000; // The user has 30 seconds to get the frog home
-  private final int wonWait = 3 * 1000; // We show the game over message for one second 
-  private final float alligatorChance = 0.5; // Half chance of spawning an alligator each reset
+  private final int GAMETIME = 30 * 1000; // The user has 30 seconds to get the frog home
+  private final int WONWAIT = 3 * 1000; // We show the game over message for one second 
+  private final float ALLIGATORCHANCE = 0.5; // Half chance of spawning an alligator each reset
+  private final float LADYBUGCHANCE = 0.3; // About one third chance of a ladybug each reset
 
   // ===== INITIALIZING THE LEVEL =====
 
@@ -34,7 +35,7 @@ public class Level extends Rectangle implements GameState {
     float spacing = h / 7;
     livesTextBox = new TextBox(x + w, y + spacing, width - x - w, spacing, "Lives: " + lives);
     pointsTextBox = new TextBox(x + w, y + spacing * 3, width - x - w, spacing, "Points: " + points);
-    timeTextBox = new TextBox(x + w, y + spacing * 5, width - x - w, spacing, "Time: " + gameTime);
+    timeTextBox = new TextBox(x + w, y + spacing * 5, width - x - w, spacing, "Time: " + GAMETIME);
     gameOver = new TextBox(0, 0, width, height / 2, "Game over!");
   }
   
@@ -58,17 +59,25 @@ public class Level extends Rectangle implements GameState {
     int numDests = 5;
     ArrayList<Integer> possibleDests = new ArrayList<Integer>(numDests); // We store the ones that haven't been reached in an ArrayList for dynamic size
 
+    // Here we reset the destination lane
     for (int i = 0; i < numDests; i++) {
-      if (getDestLane().getObstacle(i).isType("reached") || getDestLane().getObstacle(i).isType("ladybug")) continue; // Ignore the ones that have been reached
+      if (getDestLane().getObstacle(i).isType("reached")) continue; // Ignore the ones that have been reached
 
       getDestLane().setObstacleType(i, "home"); // Set the unreached ones to home
       possibleDests.add(i); // If it has not been reached we add it to the list of possible destinations
     }
     
+    int ind;
     // If the probability that an alligator is generated is chosen and there are at least two remaining destinations, we generate one
-    if (random(1) <= alligatorChance && possibleDests.size() > 1) {
-      int ind = possibleDests.get(int(random(possibleDests.size()))); // choose a random destination (ack lots of end brackets I know)
+    if (random(1) <= ALLIGATORCHANCE && possibleDests.size() > 1) {
+      ind = possibleDests.get(int(random(possibleDests.size()))); // choose a random destination (ack lots of end brackets I know)
       getDestLane().setObstacleType(ind, "alligator");
+      possibleDests.remove(new Integer(ind)); // We need to make a new integer (an object, not primitive) with the same value so that it removes by value and not index
+    }
+    
+    if (random(1) <= LADYBUGCHANCE && possibleDests.size() > 0) { // If there is still a space left and the ladyBugChance is met, we create a ladybug as well
+      ind = possibleDests.get(int(random(possibleDests.size())));
+      getDestLane().setObstacleType(ind, "ladybug");
     }
   }
 
@@ -86,6 +95,8 @@ public class Level extends Rectangle implements GameState {
     
     // We tell the users about their lives, points, and remaining time
     
+    fill(0);
+    rect(x + w, y, width - x - w, h); // We draw a black rectangle behind the buttons to cover up the obstacles that run of the edge
     livesTextBox.show();
     pointsTextBox.show();
     timeTextBox.show();
@@ -101,14 +112,14 @@ public class Level extends Rectangle implements GameState {
     
     if (wonTime >= 0) {
       // If it has been *wonTime* milliseconds since the player won, we load the menu state
-      if (millis() - wonTime >= wonWait) loadState(MENUSTATE);
+      if (millis() - wonTime >= WONWAIT) loadState(MENUSTATE);
       return;
     }
     
     for (Lane lane : lanes) lane.update(); // We update all of the lanes in the level
     frog.update(); // This just moves the frog if it is attached to a log
     
-    remainingTime = (gameTime - millis() + startTime) / 1000; // Update the remainingTime
+    remainingTime = (GAMETIME - millis() + startTime) / 1000; // Update the remainingTime
     if (remainingTime <= 0) reset(-1); // If they player has run out of time, they lose a life
 
     // Update the status boxes
@@ -118,6 +129,8 @@ public class Level extends Rectangle implements GameState {
 
   public void handleInput() {
     if (wonTime < 0) frog.move(keyCode);
+    else // The level just ended, we just skip to the main menu
+      loadState(MENUSTATE);
   }
 
   // ===== GETTERS AND SETTERS =====

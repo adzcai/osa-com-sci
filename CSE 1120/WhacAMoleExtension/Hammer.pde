@@ -61,9 +61,7 @@ class Hammer {
     }
   }
   
-  /**
-   * We use some simple transformations and draw the hammer where it's supposed to be, with a quarter from the bottom on the cursor
-   */
+  // We use some simple transformations and draw the hammer where it's supposed to be, with a quarter from the bottom on the cursor
   void show() {
     pushMatrix();
     translate(pos.x, pos.y, pos.z);

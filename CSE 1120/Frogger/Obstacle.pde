@@ -35,7 +35,8 @@ public class Obstacle extends Rectangle {
     image(assets.isSpritesheet(type) ? anim.getCurrentFrame() : img, x, y, w, h);
   }
 
-  public void collide(Frog frog) {
+  // The return value of this function tells the code whether or not to stop checking the remaining obstacles
+  public boolean collide(Frog frog) {
     switch (type) {
     case "snake":
     case "car":
@@ -55,15 +56,19 @@ public class Obstacle extends Rectangle {
       frog.attach(this);
       break;
     
+    case "ladybug":
+      frog.level.incPoints(200); // 200 points for reaching a tile with a ladybug
     case "home": // If he reaches one of the home points (note it hasn't been reached or alligator-ed)
       setType("reached"); // The frog reaches the tile, so we change its type, inc the level's points
       frog.level.incPoints(int(50 + frog.level.remainingTime / 2)); // 50 points for reaching an end tile, plus half per remaining second
-      break;
+      return true; // We return true since the frog should only be able to reach one tile at a time
     
     case "reached": // We just reset if he reaches a tile that's been reached
       frog.level.reset(0);
       break;
     }
+
+    return false; // For any of the types besides an empty destination, multiple collisions should be fine
   }
 
   public boolean isType(String type) { return this.type.equals(type); }

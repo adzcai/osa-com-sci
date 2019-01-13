@@ -50,7 +50,8 @@ public class Frog extends Rectangle {
     }
 
     for (Obstacle o : getCurrLane().obstacles) // We check for the frog's intersection with each of the obstacles in the lane
-      if (intersects(o)) o.collide(this);
+      if (intersects(o))
+        if (o.collide(this)) break; // I take a little shortcut here. Obstacle::collide returns a boolean to tell us whether or not to stop looping, but the function still gets called for every obstacle until it returns true.
     
     // If the frog landed in the water and he's not riding anything
     if (getCurrLane().isType("river") && attached == null) die();

@@ -64,10 +64,12 @@ public class TextBox extends Rectangle { // Just something that the user can cli
   }
 
   protected float fontSizeToFitText(String text) { // Gives us the font size required to fit *text* in one line in the rectangle
+    textSize(12);
     float ascentToTotal = textAscent() / (textAscent() + textDescent());
-    float minW = w * textAscent() / textWidth("  " + text); // A space on either side for padding
+    // We multiply the width and the height by 7/8 for a bit of padding
+    float minW = (w * 7 / 8) * textAscent() / textWidth(text);
     float minH = (h * 7 / 8) * ascentToTotal;
-    return min(minW, minH);
+    return min(minW, minH); // We don't want the text to overflow in either dimension, so we choose the smaller one
   }
 
   public String getText() { return text; }
@@ -116,23 +118,28 @@ public class PropTextBox extends TextBox {
   }
 
   private void changeValue(TableRow tr, int dir) {
+    int index; // We need to initialize it here to prevent a "duplicate local variable"
     switch (text) {
-      case "laneType":
+      case "laneType": // The ways these two are handled are similar
+        index = assets.indexOf(tr.getString(text), assets.laneTypes); // We get the index of the button's current value in the array
+        tr.setString(text, assets.laneTypes[constrain(index + dir, 0, assets.laneTypes.length - 2)]); // Constrain the selection to prevent array index out of bounds, and minus the destination lane
+        tr.setString("obstacleType", assets.getObstaclesOfLane(tr.getString(text))[0]); // Set the obstacle to the lane's default obstacle
+        break;
+
       case "obstacleType":
-        String[] arr = text.equals("laneType") ? assets.laneTypes : assets.obstacleTypes;
-        int index = assets.indexOf(tr.getString(text), arr); // We get the index of the button's current value in the array
-        // We set this button's text to the next value in the array. We need to constrain to prevent it from going out of bounds
-        tr.setString(text, arr[constrain(index + dir, 0, arr.length - 1)]);
+        String[] allowedObstacles = assets.getObstaclesOfLane(tr.getString("laneType")); // We just need to check which array to check
+        index = assets.indexOf(tr.getString(text), allowedObstacles);
+        tr.setString(text, allowedObstacles[constrain(index + dir, 0, allowedObstacles.length - 1)]); // Constrain the selection to prevent array index out of bounds
         break;
 
       case "numObstacles":
       case "len":
-        tr.setInt(text, tr.getInt(text) + dir);
+        tr.setInt(text, constrain(tr.getInt(text) + dir, 0, 12)); // Only from 0 to 12 obstacles allowed
         break;
+
       case "spacing":
       case "speed":
-        tr.setFloat(text, tr.getFloat(text) + 0.1 * dir);
-        break;
+        tr.setFloat(text, constrain(tr.getFloat(text) + 0.1 * dir, 0, 8)); // Spacing and speed go up to 8
     }
   }
 
