@@ -1,11 +1,13 @@
 # Shmup game
+# Based on http://kidscancode.org/lessons/
 # Frozen Jam by tgfcoder <https://twitter.com/tgfcoder> licensed under CC-BY-3
 # Art from Kenney.nl
+# Explosions: http://kidscancode.org/blog/img/Explosions_kenney.zip
+# 
 
 # ======================================== IMPORT MODULES ========================================
-import pygame
-import random
-from os import path
+import math, pygame, random, sys
+from os import path, listdir
 from pygame.locals import *
 
 # ======================================== DEFINE CONSTANTS ========================================
@@ -18,28 +20,32 @@ WIDTH = 480
 HEIGHT = 600
 FPS = 60
 POWERUP_TIME = 5000
+NUM_STARTING_MOBS = 8
 
 # define colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-YELLOW = (255, 255, 0)
+WHITE  = (255, 255, 255)
+BLACK  = (  0,   0,   0)
+RED    = (255,   0,   0)
+GREEN  = (  0, 255,   0)
+BLUE   = (  0,   0, 255)
+YELLOW = (255, 255,   0)
 
 def draw_text(surf, text, size, x, y):
+    """Draws text to :surf: with a given font size."""
     font = pygame.font.Font(font_name, size)
     text_surface = font.render(text, True, WHITE)
     text_rect = text_surface.get_rect()
     text_rect.midtop = (x, y)
     surf.blit(text_surface, text_rect)
 
-def newmob():
-    m = Mob()
+def newmob(t):
+    """Creates a new mob and adds it to the groups."""
+    m = Mob(t)
     all_sprites.add(m)
     mobs.add(m)
 
-def draw_shield_bar(surf, x, y, pct):
+def draw_health_bar(surf, x, y, pct):
+    """Draws the player's health bar at (x, y)."""
     if pct < 0:
         pct = 0
     BAR_LENGTH = 100
@@ -51,6 +57,7 @@ def draw_shield_bar(surf, x, y, pct):
     pygame.draw.rect(surf, WHITE, outline_rect, 2)
 
 def draw_lives(surf, x, y, lives, img):
+    """Draw the player's lives, usually as mini ship images in the top right."""
     for i in range(lives):
         img_rect = img.get_rect()
         img_rect.x = x + 30 * i
@@ -58,26 +65,38 @@ def draw_lives(surf, x, y, lives, img):
         surf.blit(img, img_rect)
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self):
+    """Stores information about the player."""
+    size = (50, 38)
+    mini_size = (25, 19)
+    def __init__(self, t):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(player_img, (50, 38))
-        self.image.set_colorkey(BLACK)
+
+        self.type, self.image_orig, self.rect = get_image('player_ships', t, Player.size)
+        self.image = self.image_orig.copy()
+        self.mini_img = pygame.transform.scale(self.image, Player.mini_size)
+
         self.rect = self.image.get_rect()
-        self.radius = 20
-        # pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
         self.rect.centerx = WIDTH / 2
         self.rect.bottom = HEIGHT - 10
+        self.radius = 20
+
         self.speedx = 0
-        self.shield = 100
+
+        self.hp = 100
+        self.lives = 3
+
         self.shoot_delay = 250
         self.last_shot = pygame.time.get_ticks()
-        self.lives = 3
         self.hidden = False
         self.hide_timer = pygame.time.get_ticks()
         self.power = 1
         self.power_time = pygame.time.get_ticks()
 
     def update(self):
+        """
+        We check if powerups should still be active or if it should still be hidden,
+        and then receive user input.
+        """
         # timeout for powerups
         if self.power >= 2 and pygame.time.get_ticks() - self.power_time > POWERUP_TIME:
             self.power -= 1
@@ -89,14 +108,16 @@ class Player(pygame.sprite.Sprite):
             self.rect.centerx = WIDTH / 2
             self.rect.bottom = HEIGHT - 10
 
+        # Move left or right based on the arrow keys
         self.speedx = 0
         keystate = pygame.key.get_pressed()
         if keystate[K_LEFT]:
             self.speedx = -8
         if keystate[K_RIGHT]:
             self.speedx = 8
-        if keystate[K_SPACE]:
+        if keystate[K_SPACE] and not self.hidden:
             self.shoot()
+
         self.rect.x += self.speedx
         if self.rect.right > WIDTH:
             self.rect.right = WIDTH
@@ -126,27 +147,56 @@ class Player(pygame.sprite.Sprite):
                 shoot_sound.play()
 
     def hide(self):
-        # hide the player temporarily
+        """Hides the player temporarily."""
         self.hidden = True
         self.hide_timer = pygame.time.get_ticks()
         self.rect.center = (WIDTH / 2, HEIGHT + 200)
 
 class Mob(pygame.sprite.Sprite):
-    def __init__(self):
+    """
+    Stores information about a non-player game entity, usually a meteorite.
+    :param t: the type of the mob (meteor, ufo).
+    """
+    def __init__(self, t):
         pygame.sprite.Sprite.__init__(self)
-        self.image_orig = random.choice(meteor_images)
-        self.image_orig.set_colorkey(BLACK)
+
+        if t == 'random': # We generate a random mob
+            if random.random() > 0.25:
+                self.__init__('meteor')
+            else:
+                self.__init__('ufo')
+            return
+        
+        self.type = t
+        self.image_orig = random_image(self.type + 's')
         self.image = self.image_orig.copy()
+
         self.rect = self.image.get_rect()
         self.radius = int(self.rect.width * .85 / 2)
-        # pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
+        # We spawn the mob somewhere above the screen
         self.rect.x = random.randrange(WIDTH - self.rect.width)
         self.rect.bottom = random.randrange(-80, -20)
+
+        self.hp = 10
+        self.damage = self.radius * 2
+
         self.speedy = random.randrange(1, 8)
         self.speedx = random.randrange(-3, 3)
-        self.rot = 0
+
+        self.rot = 0 # for rotation
         self.rot_speed = random.randrange(-8, 8)
+
         self.last_update = pygame.time.get_ticks()
+        self.new_mob_on_death = True
+
+        if self.type == 'ufo':
+            self.last_shot = pygame.time.get_ticks()
+            self.shoot_delay = random.randrange(700, 1000)
+            self.speedy = random.randrange(2, 4)
+        elif self.type == 'laser':
+            self.speedy = random.randrange(5, 10)
+            self.new_mob_on_death = False
+        
 
     def rotate(self):
         now = pygame.time.get_ticks()
@@ -159,20 +209,37 @@ class Mob(pygame.sprite.Sprite):
             self.rect = self.image.get_rect()
             self.rect.center = old_center
 
+    def shoot(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_shot > self.shoot_delay:
+            self.last_shot = now
+            laser = Mob('laser')
+            laser.rect.midtop = self.rect.midtop
+            all_sprites.add(laser)
+            mobs.add(laser)
+            shoot_sound.play()
+
     def update(self):
-        self.rotate()
-        self.rect.x += self.speedx
+        if self.type in ('meteor', 'ufo'):
+            self.rotate()
+
         self.rect.y += self.speedy
+        if self.type is 'ufo':
+            self.rect.centerx = WIDTH / 4 * math.sin((10 / HEIGHT) * self.rect.y) +  WIDTH / 2
+            self.shoot()
+        else:
+            self.rect.x += self.speedx
+
         if self.rect.top > HEIGHT + 10 or self.rect.left < -100 or self.rect.right > WIDTH + 100:
-            self.rect.x = random.randrange(WIDTH - self.rect.width)
-            self.rect.y = random.randrange(-100, -40)
-            self.speedy = random.randrange(1, 8)
+            if self.new_mob_on_death:
+                newmob('random')
+            self.kill()
 
 class Bullet(pygame.sprite.Sprite):
+    """Stores information about a player-fired projectile."""
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
-        self.image = bullet_img
-        self.image.set_colorkey(BLACK)
+        self.image = random_image('lasers')
         self.rect = self.image.get_rect()
         self.rect.bottom = y
         self.rect.centerx = x
@@ -185,11 +252,11 @@ class Bullet(pygame.sprite.Sprite):
             self.kill()
 
 class Pow(pygame.sprite.Sprite):
+    """Stores information about a powerup."""
     def __init__(self, center):
         pygame.sprite.Sprite.__init__(self)
         self.type = random.choice(['shield', 'gun'])
-        self.image = powerup_images[self.type]
-        self.image.set_colorkey(BLACK)
+        self.image = img['powerups']['shield_gold' if self.type == 'shield' else 'bolt_gold']
         self.rect = self.image.get_rect()
         self.rect.center = center
         self.speedy = 5
@@ -201,6 +268,7 @@ class Pow(pygame.sprite.Sprite):
             self.kill()
 
 class Explosion(pygame.sprite.Sprite):
+    """Displays a simple explosion animation."""
     def __init__(self, center, size):
         pygame.sprite.Sprite.__init__(self)
         self.size = size
@@ -212,6 +280,7 @@ class Explosion(pygame.sprite.Sprite):
         self.frame_rate = 75
 
     def update(self):
+        """Updates the frame if enough time has passed."""
         now = pygame.time.get_ticks()
         if now - self.last_update > self.frame_rate:
             self.last_update = now
@@ -224,7 +293,43 @@ class Explosion(pygame.sprite.Sprite):
                 self.rect = self.image.get_rect()
                 self.rect.center = center
 
+def get_player_ship():
+    """Gets the player to choose which image they want for their ship."""
+    ship_names = sorted(img['player_ships'].keys())
+    _, _, show_ship = get_image('player_ships', 'playerShip1_blue') # we use an arbitrary rect to get the size
+    show_ship.center = (WIDTH / 2, HEIGHT / 2)
+    
+    index = 0
+    while True:
+        clock.tick(FPS)
+        for event in pygame.event.get():
+            check_quit(event)
+            if event.type != KEYUP:
+                continue
+            if event.key == K_DOWN:
+                index += 4
+            if event.key == K_UP:
+                index -= 4
+            if event.key == K_LEFT:
+                index -= 1
+            if event.key == K_RIGHT:
+                index += 1
+            if event.key == K_RETURN:
+                return ship_names[index]
+
+        index %= 12 # We have 12 selections for the player ship image
+
+        screen.blit(img['background']['starfield'], background_rect)
+        draw_text(screen, "Zero Hour", 64, WIDTH / 2, HEIGHT / 4)
+        draw_text(screen, "by Alexander Cai", 32, WIDTH / 2, HEIGHT * 3 / 8)
+        draw_text(screen, "Use the arrow keys to choose your ship", 22, WIDTH / 2, HEIGHT * 3 / 4)
+        draw_text(screen, "Press enter to select", 18, WIDTH / 2, HEIGHT * 7 / 8)
+        screen.blit(img['player_ships'][ship_names[index]], show_ship)
+
+        pygame.display.update([show_ship])
+
 def show_go_screen():
+    """Draws the introduction screen."""
     screen.blit(background, background_rect)
     draw_text(screen, "Zero Hour", 64, WIDTH / 2, HEIGHT / 4)
     draw_text(screen, "by Alexander Cai", 32, WIDTH / 2, HEIGHT * 3 / 8)
@@ -232,14 +337,38 @@ def show_go_screen():
               WIDTH / 2, HEIGHT / 2)
     draw_text(screen, "Press a key to begin", 18, WIDTH / 2, HEIGHT * 3 / 4)
     pygame.display.flip()
+
     waiting = True
     while waiting:
         clock.tick(FPS)
         for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
+            check_quit(event)
             if event.type == KEYUP:
                 waiting = False
+
+def check_quit(e):
+    # check for closing window
+    if e.type == QUIT or e.type == KEYUP and e.key == K_ESCAPE:
+        pygame.quit()
+        sys.exit()
+
+def load_images(img_type):
+    images = {}
+    for name in listdir(path.join(img_dir, img_type)): # We loop through the directory img/img_type
+        if name.endswith('.png'):
+            img = pygame.image.load(path.join(img_dir, img_type, name)).convert()
+            img.set_colorkey(BLACK)
+            images[name[:-4]] = img
+    return images
+
+def random_image(img_type):
+    return random.choice(list(img[img_type].values()))
+
+def get_image(img_type, img_name, scale=None):
+    image = img[img_type][img_name]
+    if scale is not None:
+        image = pygame.transform.scale(image, scale)
+    return img_name, image, image.get_rect()
 
 def main():
     # ======================================== INITIALIZE PYGAME AND CREATE WINDOW ========================================
@@ -251,51 +380,23 @@ def main():
     clock = pygame.time.Clock()
     
     # ======================================== LOAD ALL IMAGES ========================================
-    global background, background_rect, player_img, player_mini_img, \
-        bullet_img, meteor_images, explosion_anim, powerup_images
-    
-    # Load background images
-    background = pygame.image.load(path.join(img_dir, "starfield.png")).convert()
-    background_rect = background.get_rect()
-
-    # Load player images
-    player_img = pygame.image.load(path.join(img_dir, "playerShip1_orange.png")).convert()
-    player_mini_img = pygame.transform.scale(player_img, (25, 19))
-    player_mini_img.set_colorkey(BLACK)
-
-    # Load bullet image
-    bullet_img = pygame.image.load(path.join(img_dir, "laserRed16.png")).convert()
-
-    # Load meteor images
-    meteor_images = []
-    meteor_list = ['meteorBrown_big1.png', 'meteorBrown_med1.png', 'meteorBrown_med1.png',
-                   'meteorBrown_med3.png', 'meteorBrown_small1.png', 'meteorBrown_small2.png',
-                   'meteorBrown_tiny1.png']
-    for img in meteor_list:
-        meteor_images.append(pygame.image.load(path.join(img_dir, img)).convert())
+    global img, background, background_rect, explosion_anim
+    # We use a dict comprehension to make a dict holding another dict for each image
+    img = {t: load_images(t) for t in ('background', 'damage', 'effects', 'enemies', 'explosions', 'lasers', 'meteors', 'player_ships', 'powerups', 'ufos', 'ui')}
+    _, background, background_rect = get_image('background', 'starfield')
 
     # Load explosion images
     explosion_anim = {}
-    explosion_anim['lg'] = []
-    explosion_anim['sm'] = []
+    explosion_anim['lg'] = [] # Large meteor
+    explosion_anim['sm'] = [] # Small meteor
     explosion_anim['player'] = []
     for i in range(9):
-        filename = 'regularExplosion0{}.png'.format(i)
-        img = pygame.image.load(path.join(img_dir, filename)).convert()
-        img.set_colorkey(BLACK)
-        img_lg = pygame.transform.scale(img, (75, 75))
+        _, img_lg, _ = get_image('explosions', f'regularExplosion0{i}', (75, 75))
         explosion_anim['lg'].append(img_lg)
-        img_sm = pygame.transform.scale(img, (32, 32))
+        img_sm = pygame.transform.scale(img_lg, (32, 32))
         explosion_anim['sm'].append(img_sm)
-        filename = 'sonicExplosion0{}.png'.format(i)
-        img = pygame.image.load(path.join(img_dir, filename)).convert()
-        img.set_colorkey(BLACK)
-        explosion_anim['player'].append(img)
-        
-    # Load powerup images
-    powerup_images = {}
-    powerup_images['shield'] = pygame.image.load(path.join(img_dir, 'shield_gold.png')).convert()
-    powerup_images['gun'] = pygame.image.load(path.join(img_dir, 'bolt_gold.png')).convert()
+
+        explosion_anim['player'].append(img['explosions'][f'sonicExplosion0{i}'])
 
     # ======================================== LOAD ALL SOUNDS ========================================
     global shoot_sound, shield_sound, power_sound, expl_sounds, player_die_sound
@@ -314,33 +415,33 @@ def main():
     pygame.mixer.music.set_volume(0.4)
     pygame.mixer.music.play(loops=-1)
 
+    player_ship_type = get_player_ship() # Prompts the player to select a ship
+
     # ======================================== GAME LOOP ========================================
     game_over = True
     running = True
     while running:
-        # if the game is over, we re-create all of the groups and mobs
+        # If the game is over, we re-create all of the groups and mobs
         if game_over:
-            global all_sprites, mobs, bullets, powerups
+            global all_sprites, mobs, bullets, enemy_bullets, powerups
             show_go_screen()
             game_over = False
-            all_sprites = pygame.sprite.Group()
+            all_sprites = pygame.sprite.Group() 
             mobs = pygame.sprite.Group()
             bullets = pygame.sprite.Group()
             powerups = pygame.sprite.Group()
-            player = Player()
+            player = Player(player_ship_type)
             all_sprites.add(player)
-            for i in range(8):
-                newmob()
+            for i in range(NUM_STARTING_MOBS):
+                newmob('random')
             score = 0
 
         # keep loop running at the right speed
         clock.tick(FPS)
 
-        # process input (events)
-        for event in pygame.event.get():
-            # check for closing window
-            if event.type == QUIT or event.type == KEYUP and event.key == K_ESCAPE:
-                running = False
+        # check if the user is exiting the game
+        for e in pygame.event.get():
+            check_quit(e)
 
         # update all the sprites
         all_sprites.update()
@@ -352,35 +453,38 @@ def main():
             random.choice(expl_sounds).play()
             expl = Explosion(hit.rect.center, 'lg')
             all_sprites.add(expl)
+            if hit.new_mob_on_death:
+                newmob('random')
             if random.random() > 0.9:
-                pow = Pow(hit.rect.center)
-                all_sprites.add(pow)
-                powerups.add(pow)
-            newmob()
+                pwrup = Pow(hit.rect.center)
+                all_sprites.add(pwrup)
+                powerups.add(pwrup)
 
         # check to see if a mob hit the player
         hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)
         for hit in hits:
-            player.shield -= hit.radius * 2
+            player.hp -= hit.damage 
+            _, damage, damage_rect = get_image('damage', f"{player.type.split('_')[0]}_damage1")
+            player.image.blit(damage, damage_rect)
             expl = Explosion(hit.rect.center, 'sm')
             all_sprites.add(expl)
-            newmob()
-            if player.shield <= 0:
+            if hit.new_mob_on_death: newmob('random')
+            if player.hp <= 0:
                 player_die_sound.play()
                 death_explosion = Explosion(player.rect.center, 'player')
                 all_sprites.add(death_explosion)
                 player.hide()
                 player.lives -= 1
-                player.shield = 100
+                player.hp = 100
 
         # check to see if player hit a powerup
         hits = pygame.sprite.spritecollide(player, powerups, True)
         for hit in hits:
             if hit.type == 'shield':
-                player.shield += random.randrange(10, 30)
+                player.hp += random.randrange(10, 30)
                 shield_sound.play()
-                if player.shield >= 100:
-                    player.shield = 100
+                if player.hp >= 100:
+                    player.hp = 100
             if hit.type == 'gun':
                 player.powerup()
                 power_sound.play()
@@ -394,8 +498,8 @@ def main():
         screen.blit(background, background_rect)
         all_sprites.draw(screen)
         draw_text(screen, str(score), 18, WIDTH / 2, 10)
-        draw_shield_bar(screen, 5, 5, player.shield)
-        draw_lives(screen, WIDTH - 100, 5, player.lives, player_mini_img)
+        draw_health_bar(screen, 5, 5, player.hp)
+        draw_lives(screen, WIDTH - 100, 5, player.lives, player.mini_img)
 
         # *after* drawing everything, flip the display
         pygame.display.flip()
