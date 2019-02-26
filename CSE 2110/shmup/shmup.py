@@ -14,6 +14,7 @@ from pygame.locals import *
 # ======================================== DEFINE CONSTANTS ========================================
 img_dir = path.join(path.dirname(__file__), 'img')
 snd_dir = path.join(path.dirname(__file__), 'snd')
+lvl_dir = path.join(path.dirname(__file__), 'lvl')
 
 font_name = pygame.font.match_font('arial')
 
@@ -74,7 +75,7 @@ class Player(pygame.sprite.Sprite):
 
         self.type, self.image_orig, self.rect = get_image('player_ships', t, Player.size)
         self.image = self.image_orig.copy()
-        self.mini_img = pygame.transform.scale(self.image, Player.mini_size)
+        _, self.mini_img, _ = get_image('ui', t.replace('Ship', 'Life'), Player.mini_size)
         self.color = self.type.split('_')[1]
 
         self.rect = self.image.get_rect()
@@ -327,6 +328,37 @@ class Explosion(pygame.sprite.Sprite):
                 self.image = explosion_anim[self.size][self.frame]
                 self.rect = self.image.get_rect()
                 self.rect.center = center
+
+class Level(object):
+    def __init__(self, level_file):
+        with open(path(lvl_dir, level_file), 'r') as file:
+            self.spawn_times = file.readlines()
+        self.start_time = pygame.time.get_ticks()
+        
+
+    def update(self):
+        self.all_sprites.update()
+
+        for i in range(len(spawn_times)):
+            if pygame.time.get_ticks() - self.start_time >= spawn_times[i][0]:
+                newmob(spawn_times[i][1])
+        if len(spawn_times) == 0:
+            lpad = Landing_Pad()
+            all_sprites.add(lpad)
+
+        # Draw / render
+        screen.fill(BLACK)
+        screen.blit(background, background_rect)
+        all_sprites.draw(screen)
+        draw_text(screen, str(player.score), 18, WIDTH / 2, 10)
+        draw_health_bar(screen, 5, 5, player.hp)
+        draw_lives(screen, WIDTH - 100, 5, player.lives, player.mini_img)
+
+        pygame.display.flip()
+        
+class Landing_Pad(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
 
 def get_player_ship():
     """Gets the player to choose which image they want for their ship."""
