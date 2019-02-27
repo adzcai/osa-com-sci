@@ -3,21 +3,9 @@
 
 import sys, pygame
 from random import choice
-pygame.init()
 
-nc = 0 # number of crawlers
-try:
-	nc = int(input('How many crawlers do you want to model? (leave empty for default) ')) # We try this in case they give a non-integer value
-	assert nc > 0, 'Must be at least one crawler'
-except:
-	nc = 100000
-
-np = 0 # number of points in the graph
-try:
-	np = int(input('How many points are there? One will be the Eater of Triangle Crawlers. '))
-	assert np >= 2, 'Must be at least 3 points'
-except:
-	np = 4
+WIDTH = 480
+HEIGHT = 480
 
 class TriangleCrawler(object):
 	"""A class to model a triangle crawler. We use __slots__ to limit the amount of RAM used by the __dict__ object. of each class."""
@@ -31,7 +19,20 @@ class TriangleCrawler(object):
 		nextPos = choice([p for p in range(np) if p not in (self.pos, self.prevPos)])
 		self.pos, self.prevPos = nextPos, self.pos # We unpack values to quickly update the current and previous position
 
+def draw_crawlers():
+	for i in range(3):
+		
+
 def main():
+	global screen, clock
+
+	pygame.init()
+	screen = pygame.display.set_mode((WIDTH, HEIGHT))
+	pygame.display.set_caption('Triangle Crawlers - Alexander Cai')
+
+	nc = 100000
+	np = 4
+
 	crawlers = [TriangleCrawler() for i in range(nc)] # Create a list of nc crawlers
 
 	total = 0 # Total lifetime of all crawlers
