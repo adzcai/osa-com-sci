@@ -1,63 +1,113 @@
 # Assignment 2 - Triangle Crawlers
 # Author: Alexander Cai
 
-import sys
+import sys, pygame
+from pygame.locals import *
 from random import choice
 
-class TriangleCrawler(object):
-	"""A class to model a triangle crawler. We use __slots__ to limit the amount of RAM used by the __dict__ object. of each class."""
-	__slots__ = ['pos', 'prevPos']
+WIDTH = 480
+HEIGHT = 480
+FPS = 30
+WAIT_TIME = 500
+NUM_CRAWLERS = 100000
+LETTERS = ('A', 'B', 'C', 'D')
+
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+
+def draw_text(surf, text, size, x, y):
+    """Draws text to :surf: with a given font size."""
+    font = pygame.font.Font(font_name, size)
+    text_surface = font.render(text, True, WHITE)
+    text_rect = text_surface.get_rect()
+    text_rect.midtop = (x, y)
+    surf.blit(text_surface, text_rect)
+
+class Crawler(pygame.sprite.Sprite):
+	"""A class to model a triangle crawler."""
 	def __init__(self):
+		pygame.sprite.Sprite.__init__(self)
 		self.pos = 0
 		self.prevPos = 0
+		self.image = pygame.Surface((10, 10))
+		self.image.fill(RED)
+		self.rect = self.image.get_rect()
+
+	def update(self):
+		self.move()
+		if self.pos != 'D': # If it has moved to a safe position
+			global total
+			total += 1
+		else:
+			self.kill()
 
 	def move(self):
 		# Filter out the current and previous position, and randomly choose one of the remaining ones
-		nextPos = choice([p for p in range(np) if p not in (self.pos, self.prevPos)])
+		nextPos = choice([p for p in LETTERS if p not in (self.pos, self.prevPos)])
 		self.pos, self.prevPos = nextPos, self.pos # We unpack values to quickly update the current and previous position
 
+class Year(pygame.sprite.Sprite):
+	def __init__(self):
+		pygame.sprite.Sprite.__init__(self)
+		self.font = pygame.font.Font(None, WIDTH // 24)
+		self.font.set_italic(1)
+		self.color = WHITE
+		self.value = 0
+		self.update()
+		self.rect = self.image.get_rect().move(10, 450)
+		
+	def update(self):
+		self.value += 1
+		msg = f"Year: {self.value}"
+		self.image = self.font.render(msg, 0, self.color)
+
+def show_results(result, total_lifetime):
+	colmaxes = {i: max(len(str(x)) for x in (row[i] for row in result)) for i in range(3)} # Use a big old
+	for row in result:
+		print(str(row[i]).rjust(colmaxes[i]) for i in range(3))
+		
+	print('The average lifetime was ' + str(total_lifetime / NUM_CRAWLERS))
+
 def main():
-	global nc, np
-	nc = 0 # number of crawlers
-	try:
-		nc = int(input('How many crawlers do you want to model? (leave empty for default) ')) # We try this in case they give a non-integer value
-		assert nc > 0, 'Must be at least one crawler'
-	except:
-		nc = 100000
+	global screen, clock, crawlers
 
-	np = 0 # number of points in the graph
-	try:
-		np = int(input('How many points are there? One will be the Eater of Triangle Crawlers. '))
-		assert np >= 2, 'Must be at least 3 points'
-	except:
-		np = 4
-	
-	crawlers = [TriangleCrawler() for i in range(nc)] # Create a list of nc crawlers
+	# Initialize pygame, screen, and clock
+	pygame.init()
+	screen = pygame.display.set_mode((WIDTH, HEIGHT))
+	pygame.display.set_caption('Triangle Crawlers')
+	clock = pygame.time.Clock()
 
-	total = 0 # Total lifetime of all crawlers
+	font = pygame.font.match_font('arial')
+		
+	crawlers = pygame.sprite.RenderUpdates(Crawler() for i in range(NUM_CRAWLERS))
+	year = pygame.sprite.GroupSingle(Year())
 
 	result = [('Days', '    Crawlers left', '    Total lifetime')]
+	total = 0 # Total lifetime of all crawlers
+	last_move = 0
 
-	count = 1
-	while len(crawlers) >= 1:
-		for crawler in crawlers:
-			total += 1 # Each crawler moves; we check for the death time after
-			crawler.move()
-		
-		# Remove all the dead crawlers from the array. Without loss of generality, we can let np - 1 be the Eater of Triangle Crawlers.
-		crawlers = [c for c in crawlers if not c.pos == np - 1] 
+	waiting = True
+	
+	draw_text(screen, "Triangle Crawler Simulation", HEIGHT // 10, WIDTH / 2, HEIGHT // 4)
+	draw_text(screen, "By Alexander Cai", HEIGHT // 18, WIDTH // 2, HEIGHT // 2)
+	draw_text(screen, "Press any key to begin", HEIGHT // 24, WIDTH // 2, HEIGHT * 3 // 4)
 
-		result.append((count, len(crawlers), total))
+	while True: # Main game loop
+		screen.fill(WHITE)
 
-		count += 1
+		for event in pygame.event.get():
+			if event.type == QUIT or event.type == KEYUP and event.key == K_ESCAPE:
+				pygame.quit()
+				sys.exit()
 
-	col0max = max(len(str(x)) for x in (row[0] for row in result))
-	col1max = max(len(str(x)) for x in (row[1] for row in result))
-	col2max = max(len(str(x)) for x in (row[2] for row in result))
-	for row in result:
-		print(str(row[0]).rjust(col0max), str(row[1]).rjust(col1max), str(row[2]).rjust(col2max))
-		
-	print('The average lifetime was ' + str(total / nc))
+		if pygame.time.get_ticks() - last_move > WAIT_TIME: # We move onto the next year
+			crawlers.update()
+			year.update()
+			result.append((years, len(crawlers), total))
+
+		clock.tick(FPS)
+
+	show_results(result, total)
 
 if __name__ == "__main__":
 	main()
