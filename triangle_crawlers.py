@@ -204,7 +204,7 @@ def main():
 	circles.add(Circle(WIDTH // 2, HEIGHT // 2, circler, last_letter)) # Add the eater in the center
 
 	result = [] # Stores (Days, Crawlers left, Total lifetime)
-	total = 0 # Total lifetime of all crawlers
+	total = len(crawlers) # Total lifetime of all crawlers
 	last_move = pygame.time.get_ticks()
 	wait_time = WAIT_TIME # We create a new variable so that we can speed it up as the program runs
 
