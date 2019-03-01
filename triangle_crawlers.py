@@ -56,6 +56,7 @@ class Day(pygame.sprite.Sprite):
 		self.update() # Draws its image
 		self.rect = self.image.get_rect()
 		self.rect.topleft = (10, 10) # Put it in the corner	
+
 	def update(self):
 		"""Increments the day and updates the image accordingly."""
 		self.value += 1
@@ -125,21 +126,19 @@ def show_start_screen():
 def show_results(results, total_lifetime, marked_life):
 	"""Displays the last NUM_RESULTS_TO_SHOW years of the triangle crawlers in a table to the screen, along with their average lifetime."""
 	screen.fill(WHITE)
-	
-	font_size = int((HEIGHT - 20) / (NUM_RESULTS_TO_SHOW + 5)) # This makes the 16 rows of the result take up 3/4 of the screen
 
-	y = 10 # The height we're drawing the text at
+	font_size = int((HEIGHT - 20) / (NUM_RESULTS_TO_SHOW + 5)) # Divide by the number of total lines
+	y = font_size // 4 # The height we start to draw the text at
 
 	draw_text(screen, "The average lifetime was " + str(total_lifetime / NUM_CRAWLERS), BLACK, font_size, WIDTH // 2, y)
 	y += font_size
 	draw_text(screen, f"The marked crawler lasted {marked_life} days", BLACK, font_size, WIDTH // 2, y)
 	y += font_size
 	draw_text(screen, f"Last {NUM_RESULTS_TO_SHOW} days shown below", BLACK, font_size, WIDTH // 2, y)
+	y += font_size
 
 	results = results[-NUM_RESULTS_TO_SHOW:] # Only show the last 15 results
 	results.insert(0, ("Days", "Crawlers left", "Total lifetime"))
-	
-	y += font_size
 
 	for i in range(NUM_RESULTS_TO_SHOW+1): # For each row of the results
 		for j in range(3): # Each of the three columns
@@ -158,7 +157,7 @@ def show_results(results, total_lifetime, marked_life):
 			if event.type == KEYUP:
 				if event.key == K_RETURN:
 					return True # We break out of the program and let it know to go for another run
-				else: # Quit the game
+				else: # Quit the program
 					pygame.quit()
 					sys.exit()
 
@@ -176,17 +175,18 @@ def main():
 	screen = pygame.display.set_mode((WIDTH, HEIGHT))
 	pygame.display.set_caption("Triangle Crawlers")
 	clock = pygame.time.Clock()
-
-	font = pygame.font.match_font("arial")
-		
+	
+	# Create all of the crawlers and load them into a pygame group
 	crawlers = pygame.sprite.Group(Crawler(False) for i in range(NUM_CRAWLERS - 1))
 	marked = Crawler(True) # We mark a crawler and watch its progress
 	crawlers.add(marked)
 	marked_life = 1
 
+	# Initialize visual components
 	day = pygame.sprite.GroupSingle(Day())
 	circles = pygame.sprite.Group()
 	
+	# Waits for the user to select a number of points
 	show_start_screen()
 
 	# Set up the geometry of the circles
