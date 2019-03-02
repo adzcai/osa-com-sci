@@ -69,6 +69,9 @@ class Player(pygame.sprite.Sprite):
     """Stores information about the player."""
     size = (50, 38)
     mini_size = (25, 19)
+    MAX_HP = 100
+    ACCEL_SPEED = 2
+    MAX_SPEED = 8
     def __init__(self, t):
         pygame.sprite.Sprite.__init__(self)
 
@@ -83,8 +86,11 @@ class Player(pygame.sprite.Sprite):
         self.radius = 20
 
         self.speedx = 0
+        self.speedy = 0
+        self.accelx = 0
+        self.accely = 0
 
-        self.hp = 100
+        self.hp = Player.MAX_HP
         self.lives = 3
         self.score = 0
 
@@ -120,12 +126,28 @@ class Player(pygame.sprite.Sprite):
             self.rect.bottom = HEIGHT - 10
 
         # Move left or right based on the arrow keys
-        self.speedx = 0
+        # Reset acceleration
+        self.accelx = 0
+        self.accely = 0
         keystate = pygame.key.get_pressed()
+        if keystate[K_UP]:
+            self.accely = -Player.ACCEL_SPEED
+        if keystate[K_DOWN]:
+            self.accely = Player.ACCEL_SPEED
         if keystate[K_LEFT]:
-            self.speedx = -8
+            self.accelx = -Player.ACCEL_SPEED
         if keystate[K_RIGHT]:
-            self.speedx = 8
+            self.accely = Player.ACCEL_SPEED
+
+        self.speedx += self.accelx
+        self.speedy += self.accely
+        
+        vec = pygame.math.Vector2(self.speedx, self.speedy)
+        if vec.length() >= Player.MAX_SPEED:
+            vec.scale_to_length(Player.MAX_SPEED)
+            self.speedx = vec.x
+            self.speedy = vec.y
+
         if keystate[K_SPACE] and not self.hidden:
             self.shoot()
 
@@ -332,6 +354,9 @@ class Landing_Pad(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
 
+    def update(self):
+        return super().update(*args)
+
 def get_player_ship():
     """Gets the player to choose which image they want for their ship."""
     ship_names = sorted(img['player_ships'].keys())
@@ -512,18 +537,21 @@ def main():
         hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)
         for hit in hits:
             player.hp -= hit.damage 
-            _, damage, damage_rect = get_image('damage', f"{player.type.split('_')[0]}_damage1")
-            player.image.blit(damage, damage_rect)
+            if player.hp / Player.MAX_HP <= 0.5:
+                _, damage, damage_rect = get_image('damage', f"{player.type.split('_')[0]}_damage1", Player.size)
+                player.image.blit(damage, damage_rect)
+            
             expl = Explosion(hit.rect.center, 'sm')
             all_sprites.add(expl)
-            if hit.new_mob_on_death: newmob('random')
+            if hit.new_mob_on_death:
+                newmob('random')
             if player.hp <= 0:
                 player_die_sound.play()
                 death_explosion = Explosion(player.rect.center, 'player')
                 all_sprites.add(death_explosion)
                 player.hide()
                 player.lives -= 1
-                player.hp = 100
+                player.hp = Player.MAX_HP
 
         # check to see if player hit a powerup
         hits = pygame.sprite.spritecollide(player, powerups, True)
