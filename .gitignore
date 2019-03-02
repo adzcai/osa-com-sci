@@ -2,3 +2,4 @@
 **/out
 **/.vscode
 **/*.jar
+*.svn-base
