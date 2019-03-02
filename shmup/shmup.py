@@ -31,6 +31,53 @@ GREEN  = (  0, 255,   0)
 BLUE   = (  0,   0, 255)
 YELLOW = (255, 255,   0)
 
+allow_spawning = True
+
+def init():
+    global screen, clock
+    pygame.init()
+    pygame.mixer.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Zero Hour - Alexander Cai")
+    clock = pygame.time.Clock()
+
+def load_resources():
+    # ======================================== LOAD ALL IMAGES ========================================
+    global img, background, background_rect, explosion_anim
+    # We use a dict comprehension to make a dict holding another dict for each image
+    img = {t: load_images(t) for t in ('background', 'damage', 'effects', 'enemies', 'explosions', 'lasers', 'meteors', 'player_ships', 'powerups', 'space_stations', 'ufos', 'ui')}
+    _, background, background_rect = get_image('background', 'starfield')
+
+    # Load explosion images
+    explosion_anim = {}
+    explosion_anim['lg'] = [] # Large meteor
+    explosion_anim['sm'] = [] # Small meteor
+    explosion_anim['player'] = []
+    for i in range(9):
+        _, img_lg, _ = get_image('explosions', f'regularExplosion0{i}', (75, 75))
+        explosion_anim['lg'].append(img_lg)
+        img_sm = pygame.transform.scale(img_lg, (32, 32))
+        explosion_anim['sm'].append(img_sm)
+
+        explosion_anim['player'].append(img['explosions'][f'sonicExplosion0{i}'])
+
+    # ======================================== LOAD ALL SOUNDS ========================================
+    global shoot_sound, shield_sound, power_sound, expl_sounds, player_die_sound
+
+    # Load all game sounds
+    shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'pew.wav'))
+    shield_sound = pygame.mixer.Sound(path.join(snd_dir, 'pow4.wav'))
+    power_sound = pygame.mixer.Sound(path.join(snd_dir, 'pow5.wav'))
+    expl_sounds = []
+    for snd in ['expl3.wav', 'expl6.wav']:
+        expl_sounds.append(pygame.mixer.Sound(path.join(snd_dir, snd)))
+    player_die_sound = pygame.mixer.Sound(path.join(snd_dir, 'rumble1.ogg'))
+
+    # Load all music
+    pygame.mixer.music.load(path.join(snd_dir, 'tgfcoder-FrozenJam-SeamlessLoop.ogg'))
+    pygame.mixer.music.set_volume(0.4)
+    pygame.mixer.music.play(loops=-1) # Loop music forever
+
 def draw_text(surf, text, size, x, y):
     """Draws text to :surf: with a given font size."""
     font = pygame.font.Font(font_name, size)
@@ -41,9 +88,10 @@ def draw_text(surf, text, size, x, y):
 
 def newmob(t):
     """Creates a new mob and adds it to the groups."""
-    m = Mob(t)
-    all_sprites.add(m)
-    mobs.add(m)
+    if allow_spawning:
+        m = Mob(t)
+        all_sprites.add(m)
+        mobs.add(m)
 
 def draw_health_bar(surf, x, y, pct):
     """Draws the player's health bar at (x, y)."""
@@ -70,8 +118,9 @@ class Player(pygame.sprite.Sprite):
     size = (50, 38)
     mini_size = (25, 19)
     MAX_HP = 100
-    ACCEL_SPEED = 2
+    ACCEL_SPEED = 1
     MAX_SPEED = 8
+    DEATH_LENGTH = 1000
     def __init__(self, t):
         pygame.sprite.Sprite.__init__(self)
 
@@ -79,16 +128,19 @@ class Player(pygame.sprite.Sprite):
         self.image = self.image_orig.copy()
         _, self.mini_img, _ = get_image('ui', t.replace('Ship', 'Life'), Player.mini_size)
         self.color = self.type.split('_')[1]
+        if self.color == 'orange':
+            self.color = 'red'
 
         self.rect = self.image.get_rect()
         self.rect.centerx = WIDTH / 2
         self.rect.bottom = HEIGHT - 10
         self.radius = 20
 
+        self.status = 'controlled'
+
         self.speedx = 0
         self.speedy = 0
         self.accelx = 0
-        self.accely = 0
 
         self.hp = Player.MAX_HP
         self.lives = 3
@@ -100,7 +152,6 @@ class Player(pygame.sprite.Sprite):
 
         self.shoot_delay = 250
         self.last_shot = pygame.time.get_ticks()
-        self.hidden = False
         self.hide_timer = pygame.time.get_ticks()
         self.powerups = {}
 
@@ -119,43 +170,60 @@ class Player(pygame.sprite.Sprite):
         for e in expired:
             del self.powerups[e]
 
-        # unhide if hidden
-        if self.hidden and pygame.time.get_ticks() - self.hide_timer > 1000:
-            self.hidden = False
+        # check if it has been dead long enough
+        if self.status == 'dead' and pygame.time.get_ticks() - self.hide_timer > Player.DEATH_LENGTH:
+            self.status = 'controlled'
             self.rect.centerx = WIDTH / 2
             self.rect.bottom = HEIGHT - 10
 
-        # Move left or right based on the arrow keys
-        # Reset acceleration
-        self.accelx = 0
-        self.accely = 0
-        keystate = pygame.key.get_pressed()
-        if keystate[K_UP]:
-            self.accely = -Player.ACCEL_SPEED
-        if keystate[K_DOWN]:
-            self.accely = Player.ACCEL_SPEED
-        if keystate[K_LEFT]:
-            self.accelx = -Player.ACCEL_SPEED
-        if keystate[K_RIGHT]:
-            self.accely = Player.ACCEL_SPEED
+        if self.status == 'controlled':
+            self.move()
+        elif self.status == 'landing': # Makes the player landing more tricky by using acceleration
+            # Reset acceleration
+            keystate = pygame.key.get_pressed()
+            self.accelx = 0
+            if keystate[K_LEFT]:
+                self.accelx = -Player.ACCEL_SPEED
+            if keystate[K_RIGHT]:
+                self.accelx = Player.ACCEL_SPEED
+            self.speedx += self.accelx
+            self.speedy = 2
 
-        self.speedx += self.accelx
-        self.speedy += self.accely
+            # Test the player remains below the max speed
+            vec = pygame.math.Vector2(self.speedx, self.speedy)
+            if vec.length() >= Player.MAX_SPEED:
+                vec.scale_to_length(Player.MAX_SPEED)
+                self.speedx = vec.x
+                self.speedy = vec.y
         
-        vec = pygame.math.Vector2(self.speedx, self.speedy)
-        if vec.length() >= Player.MAX_SPEED:
-            vec.scale_to_length(Player.MAX_SPEED)
-            self.speedx = vec.x
-            self.speedy = vec.y
-
-        if keystate[K_SPACE] and not self.hidden:
-            self.shoot()
-
         self.rect.x += self.speedx
-        if self.rect.right > WIDTH:
-            self.rect.right = WIDTH
+        self.rect.y += self.speedy
+
+        # Check bounds
+        if self.rect.top < 0:
+            self.rect.top = 0
+        if self.rect.bottom > HEIGHT:
+            self.rect.bottom = HEIGHT
         if self.rect.left < 0:
             self.rect.left = 0
+        if self.rect.right > WIDTH:
+            self.rect.right = WIDTH
+
+    def move(self):
+        # Move left or right based on the arrow keys
+        keystate = pygame.key.get_pressed()
+        self.speedx = 0
+        self.speedy = 0
+        if keystate[K_UP]:
+            self.speedy = -Player.MAX_SPEED
+        if keystate[K_DOWN]:
+            self.speedy = Player.MAX_SPEED
+        if keystate[K_LEFT]:
+            self.speedx = -Player.MAX_SPEED
+        if keystate[K_RIGHT]:
+            self.speedx = Player.MAX_SPEED
+        if keystate[K_SPACE] and self.status == 'controlled':
+            self.shoot()
 
     def powerup(self, p_type):
         if p_type == 'gun':
@@ -196,11 +264,13 @@ class Player(pygame.sprite.Sprite):
                 bullets.add(bullet)
             shoot_sound.play()
 
-    def hide(self):
+    def die(self):
         """Hides the player temporarily."""
-        self.hidden = True
+        self.status = 'dead'
+        self.lives -= 1
+        self.hp = Player.MAX_HP # Reset HP
         self.hide_timer = pygame.time.get_ticks()
-        self.rect.center = (WIDTH / 2, HEIGHT + 200)
+        self.rect.center = (WIDTH / 2, HEIGHT + 200) # Put the player offscreen
 
 class Mob(pygame.sprite.Sprite):
     """
@@ -351,11 +421,11 @@ class Explosion(pygame.sprite.Sprite):
                 self.rect.center = center
         
 class Landing_Pad(pygame.sprite.Sprite):
+    size = (150, 251)
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-
-    def update(self):
-        return super().update(*args)
+        _, self.image, self.rect = get_image('space_stations', 'spaceStation_017', Landing_Pad.size)
+        self.rect.midtop = (WIDTH // 2, HEIGHT * 3 // 4)
 
 def get_player_ship():
     """Gets the player to choose which image they want for their ship."""
@@ -434,56 +504,104 @@ def get_image(img_type, img_name, scale=None):
         image = pygame.transform.scale(image, scale)
     return img_name, image, image.get_rect()
 
-def main():
-    # ======================================== INITIALIZE PYGAME AND CREATE WINDOW ========================================
-    global screen, clock
-    pygame.init()
-    pygame.mixer.init()
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Zero Hour - Alexander Cai")
-    clock = pygame.time.Clock()
+def level_over(player):
+    global all_sprites, mobs, bullets, enemy_bullets, powerups, allow_spawning, clock
+    allow_spawning = False
+
+    destination = (WIDTH // 2, HEIGHT // 6)
+
+    player.status = 'rising'
+    player.speedx = 0
+    player.speedy = 0
+    rising = True
+    while rising:
+        clock.tick(FPS)
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+
+        all_sprites.update()
+        
+        if player.rect.midtop == destination:
+            rising = False
+        else:
+            if player.rect.centerx < destination[0]:
+                player.speedx = 1
+            elif player.rect.centerx > destination[0]:
+                player.speedx = -1
+            else:
+                player.speedx = 0
+            
+            if player.rect.top > destination[1]:
+                player.speedy = -1
+            elif player.rect.top < destination[1]:
+                player.speedy = 1
+            else:
+                player.speedy = 0
+
+        # Draw / render
+        screen.fill(BLACK)
+        screen.blit(background, background_rect)
+        all_sprites.draw(screen)
+        draw_text(screen, str(player.score), 18, WIDTH / 2, 10)
+        draw_health_bar(screen, 5, 5, player.hp)
+        draw_lives(screen, WIDTH - 100, 5, player.lives, player.mini_img)
+
+        pygame.display.flip()
+
+    pad = Landing_Pad()
+    all_sprites.add(pad)
+    player.status = 'landing'
+    passed = False
+    while player.rect.bottom <= pad.rect.top:
+        clock.tick(FPS)
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+
+        all_sprites.update()
+
+        # Draw / render
+        screen.fill(BLACK)
+        screen.blit(background, background_rect)
+        all_sprites.draw(screen)
+        draw_text(screen, str(player.score), 18, WIDTH / 2, 10)
+        draw_health_bar(screen, 5, 5, player.hp)
+        draw_lives(screen, WIDTH - 100, 5, player.lives, player.mini_img)
+
+        pygame.display.flip()
+        
+    draw_text(screen, "Game over! Press enter to restart or any key to quit", 24, WIDTH // 2, HEIGHT // 4)
+    if pad.rect.left < player.rect.centerx and player.rect.centerx < pad.rect.right:
+        player.status = 'ended'
+        player.speedx = 0
+        player.speedy = 0
+        draw_text(screen, "Congrats! + 50 Bonus points", 24, WIDTH // 2, HEIGHT // 2)
+    else:
+        draw_text(screen, "Oh no! You didn't make it", 24, WIDTH // 2, HEIGHT // 2)
     
-    # ======================================== LOAD ALL IMAGES ========================================
-    global img, background, background_rect, explosion_anim
-    # We use a dict comprehension to make a dict holding another dict for each image
-    img = {t: load_images(t) for t in ('background', 'damage', 'effects', 'enemies', 'explosions', 'lasers', 'meteors', 'player_ships', 'powerups', 'ufos', 'ui')}
-    _, background, background_rect = get_image('background', 'starfield')
+    pygame.display.flip()
 
-    # Load explosion images
-    explosion_anim = {}
-    explosion_anim['lg'] = [] # Large meteor
-    explosion_anim['sm'] = [] # Small meteor
-    explosion_anim['player'] = []
-    for i in range(9):
-        _, img_lg, _ = get_image('explosions', f'regularExplosion0{i}', (75, 75))
-        explosion_anim['lg'].append(img_lg)
-        img_sm = pygame.transform.scale(img_lg, (32, 32))
-        explosion_anim['sm'].append(img_sm)
+    waiting = True
+    while waiting:
+        clock.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == QUIT or event.type == KEYUP and event.key == K_ESCAPE:
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYUP and event.key == K_RETURN:
+                waiting = False
 
-        explosion_anim['player'].append(img['explosions'][f'sonicExplosion0{i}'])
-
-    # ======================================== LOAD ALL SOUNDS ========================================
-    global shoot_sound, shield_sound, power_sound, expl_sounds, player_die_sound
-
-    # Load all game sounds
-    shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'pew.wav'))
-    shield_sound = pygame.mixer.Sound(path.join(snd_dir, 'pow4.wav'))
-    power_sound = pygame.mixer.Sound(path.join(snd_dir, 'pow5.wav'))
-    expl_sounds = []
-    for snd in ['expl3.wav', 'expl6.wav']:
-        expl_sounds.append(pygame.mixer.Sound(path.join(snd_dir, snd)))
-    player_die_sound = pygame.mixer.Sound(path.join(snd_dir, 'rumble1.ogg'))
-
-    # Load all music
-    pygame.mixer.music.load(path.join(snd_dir, 'tgfcoder-FrozenJam-SeamlessLoop.ogg'))
-    pygame.mixer.music.set_volume(0.4)
-    pygame.mixer.music.play(loops=-1)
-
+def main():
     player_ship_type = get_player_ship() # Prompts the player to select a ship
-
-    # ======================================== GAME LOOP ========================================
     game_over = True
     running = True
+    level_ended = False
+    level_length = 10000
     while running:
         # If the game is over, we re-create all of the groups and mobs
         if game_over:
@@ -498,6 +616,10 @@ def main():
             all_sprites.add(player)
             for i in range(NUM_STARTING_MOBS):
                 newmob('random')
+            start_time = pygame.time.get_ticks()
+
+        if pygame.time.get_ticks() - start_time >= level_length: # The level is over
+            running = False 
 
         # keep loop running at the right speed
         clock.tick(FPS)
@@ -549,14 +671,12 @@ def main():
                 player_die_sound.play()
                 death_explosion = Explosion(player.rect.center, 'player')
                 all_sprites.add(death_explosion)
-                player.hide()
-                player.lives -= 1
-                player.hp = Player.MAX_HP
+                player.die()
 
         # check to see if player hit a powerup
         hits = pygame.sprite.spritecollide(player, powerups, True)
         for hit in hits:
-            player.powerup(hit.type)
+            player.powerup(hit.type)        
 
         # if the player died and the explosion has finished playing
         if player.lives == 0 and not death_explosion.alive():
@@ -573,7 +693,10 @@ def main():
         # *after* drawing everything, flip the display
         pygame.display.flip()
 
-    pygame.quit()
+    if level_over(player): # If the player decides to go again
+        main()
 
 if __name__ == "__main__":
+    init()
+    load_resources()
     main()
