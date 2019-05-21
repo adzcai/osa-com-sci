@@ -36,6 +36,18 @@ Tracking the version history of my Com Sci assignments and giving me motivation 
 - Assignment 1 - Big Piano
 - Assignment 2 - Pong
 
+```
+First Header | Second Header
+------------ | -------------
+Content from cell 1 | Content from cell 2
+Content in the first column | Content in the second column
+```
+
+| Command | Description |
+| --- | --- |
+| `git status` | List all *new or modified* files |
+| `git diff` | Show file differences that **haven't been** staged |
+
 <details>
   <summary>CSE 2120 - Data Structures 1</summary>
 
