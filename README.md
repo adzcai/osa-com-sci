@@ -39,14 +39,12 @@ Tracking the version history of my Com Sci assignments and giving me motivation 
 <details>
   <summary>CSE 2120 - Data Structures 1</summary>
 
-  ```
   Exercises | Weighting (Total 30%)
   --------- | ---------------------
   Exercise 1 - Data Structures | 5%
   Exercise 2 - Hangman | 5%
   Exercise 3 - Pseudocode | 10%
   Exercise 4 - More Data Structures | 10%
-  ```
 
   ```
   Assignments | Weighting (Total 45%)
