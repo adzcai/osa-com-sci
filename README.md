@@ -36,18 +36,6 @@ Tracking the version history of my Com Sci assignments and giving me motivation 
 - Assignment 1 - Big Piano
 - Assignment 2 - Pong
 
-```
-First Header | Second Header
------------- | -------------
-Content from cell 1 | Content from cell 2
-Content in the first column | Content in the second column
-```
-
-| Command | Description |
-| --- | --- |
-| `git status` | List all *new or modified* files |
-| `git diff` | Show file differences that **haven't been** staged |
-
 <details>
   <summary>CSE 2120 - Data Structures 1</summary>
 
@@ -58,15 +46,13 @@ Content in the first column | Content in the second column
   Exercise 3 - Pseudocode | 10%
   Exercise 4 - More Data Structures | 10%
 
-  ```
   Assignments | Weighting (Total 45%)
   ----------- | ---------------------
   Assignment 1 - Data Structures | 10%
   Assignment 2 - Cryptography (omitted) | 15%
   Assignment 3 - Battleship | 20%
-  ```
 
-  ```
-  Course Project - Zero Hour - 25%
-  ```
+  --- | ---
+  Course Project - Zero Hour | 25%
+  
 </details>
