@@ -22,14 +22,16 @@ Tracking the version history of my Com Sci assignments and giving me motivation 
   - Exercise 2 - RGB
   - Exercise 3 - Error Handling
   - Exercise 4 - Creating Variables and Functions
+
   - Assignment 1 - Snowman
   - Assignment 2 - Etch-a-Sketch
   - Assignment 3 - Pythagoras
   - Course Project - Paint By Dot
 
 ### CSE 1120 Structured Programming 2
-  - Exercise 1 - If, Else and Else If Statements
-  - Exercise 2 - Logic Operators
-  - Exercise 3 - While Loops
-  - Assignment 1 - Big Piano
-  - Assignment 2 - Pong
+  - Exercise 1 - If, Else and Else If Statements
+  - Exercise 2 - Logic Operators
+  - Exercise 3 - While Loops
+  
+  - Assignment 1 - Big Piano
+  - Assignment 2 - Pong
