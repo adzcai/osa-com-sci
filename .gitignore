@@ -1,3 +1,4 @@
+# BEGIN FROM PYTHON.GITIGNORE (https://github.com/github/gitignore/blob/master/Python.gitignore)
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -85,7 +86,7 @@ ipython_config.py
 # pipenv
 #   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
 #   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don’t work, or not
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
 #   install all needed dependencies.
 #Pipfile.lock
 
@@ -121,9 +122,17 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+# END PYTHON.GITIGNORE
 
-**/.DS_Store
-**/out
-**/.vscode
-**/*.jar
-*.svn-base
+# BEGIN PROCESSING.GITIGNORE (https://github.com/github/gitignore/blob/master/Processing.gitignore)
+.DS_Store
+applet
+application.linux-arm64
+application.linux-armv6hf
+application.linux32
+application.linux64
+application.windows32
+application.windows64
+application.macosx
+out
+# END PROCESSING.GITIGNORE
