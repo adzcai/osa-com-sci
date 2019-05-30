@@ -23,5 +23,5 @@ highest = scores.pop()
 lowest = scores.pop(0)
 
 print(f"Removed scores: {lowest} and {highest}")
-print(f"Your average score is {sum(scores) / len(scores)}")
+print(f"Your average score is {sum(scores) / len(scores)}") # Average = sum / number of elements
 print() # I like having whitespace to reduce clutter
